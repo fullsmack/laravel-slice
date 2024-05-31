@@ -15,7 +15,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Fullsmack\\LaravelSlice\\": "src/"
+            "FullSmack\\LaravelSlice\\": "src/"
         }
     },
     "autoload-dev": {
