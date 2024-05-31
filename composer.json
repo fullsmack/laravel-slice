@@ -1,0 +1,26 @@
+{
+    "name": "fullsmack/laravel-slice",
+    "description": "A simple modules or slice package for Laravel",
+    "homepage": "https://github.com/fullsmack/laravel-slice",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "nicolaibaaring"
+        }
+    ],
+    "require": {
+        "php": "^8.1",
+        "laravel/framework": "^10.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Fullsmack\\LaravelSlice\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    }
+}
