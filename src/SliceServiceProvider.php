@@ -118,7 +118,9 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         $routeFiles = $this->directoryFiles($routesDirectory);
 
-        $this->loadRoutesFrom($routeFiles);
+        $routeFiles->each(function($routeFile) use($routesDirectory): void {
+            $this->loadRoutesFrom("{$routesDirectory}/{$routeFile}");
+        });
     }
 
     protected function registerTranslations(): void
