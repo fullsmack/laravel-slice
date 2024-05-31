@@ -12,8 +12,9 @@ class Slice
     protected string $baseNamespace;
 
     private bool $hasConfig = false;
-    private bool $hasViews = false;
+    private bool $hasRoutes = false;
     private bool $hasTranslations = false;
+    private bool $hasViews = false;
     private bool $hasMigrations = false;
 
     /** @var array<Feature> */
@@ -33,9 +34,9 @@ class Slice
         return $this;
     }
 
-    public function useViews(): static
+    public function useRoutes(): static
     {
-        $this->hasViews = true;
+        $this->hasRoutes = true;
 
         return $this;
     }
@@ -43,6 +44,13 @@ class Slice
     public function useTranslations(): static
     {
         $this->hasTranslations = true;
+
+        return $this;
+    }
+
+    public function useViews(): static
+    {
+        $this->hasViews = true;
 
         return $this;
     }
@@ -106,14 +114,19 @@ class Slice
         return $this->hasConfig;
     }
 
-    public function hasViews(): bool
+    public function hasRoutes(): bool
     {
-        return $this->hasViews;
+        return $this->hasRoutes;
     }
 
     public function hasTranslations(): bool
     {
         return $this->hasTranslations;
+    }
+
+    public function hasViews(): bool
+    {
+        return $this->hasViews;
     }
 
     public function hasMigrations(): bool

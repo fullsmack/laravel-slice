@@ -55,6 +55,11 @@ abstract class SliceServiceProvider extends ServiceProvider
     {
         $this->bootingSlice();
 
+        if($this->slice->hasRoutes())
+        {
+            $this->registerRoutes();
+        }
+
         if($this->slice->hasTranslations())
         {
             $this->registerTranslations();
@@ -106,33 +111,11 @@ abstract class SliceServiceProvider extends ServiceProvider
         }
     }
 
-    protected function registerMigrations(): void
+    protected function registerRoutes(): void
     {
-        $migrationDirectory = $this->slice->basePath('/../database/migrations');
+        $routesDirectory = $this->slice->basePath('/../routes');
 
-        $this->loadMigrationsFrom($migrationDirectory);
-    }
-
-    protected function registerViews(): void
-    {
-        $viewDirectory = $this->slice->basePath('/../resources/views');
-
-        $viewPaths = [
-            $viewDirectory.'/',
-        ];
-
-        $this->loadViewsFrom($viewPaths, $this->slice->name());
-    }
-
-    protected function registerFeatures(): void
-    {
-        foreach($this->slice->features() as $feature)
-        {
-            if($feature instanceof Feature)
-            {
-                $feature->register($this->slice);
-            }
-        }
+        $this->loadRoutesFrom($routesDirectory);
     }
 
     protected function registerTranslations(): void
@@ -146,6 +129,35 @@ abstract class SliceServiceProvider extends ServiceProvider
         $this->loadTranslationsFrom($langPath, $this->slice->name());
 
         $this->loadJsonTranslationsFrom($langPath, $this->slice->name());
+    }
+
+    protected function registerViews(): void
+    {
+        $viewDirectory = $this->slice->basePath('/../resources/views');
+
+        $viewPaths = [
+            $viewDirectory.'/',
+        ];
+
+        $this->loadViewsFrom($viewPaths, $this->slice->name());
+    }
+
+    protected function registerMigrations(): void
+    {
+        $migrationDirectory = $this->slice->basePath('/../database/migrations');
+
+        $this->loadMigrationsFrom($migrationDirectory);
+    }
+
+    protected function registerFeatures(): void
+    {
+        foreach($this->slice->features() as $feature)
+        {
+            if($feature instanceof Feature)
+            {
+                $feature->register($this->slice);
+            }
+        }
     }
 
     protected function getReflector(): ReflectionClass
