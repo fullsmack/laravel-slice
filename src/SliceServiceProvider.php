@@ -17,6 +17,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 {
     protected Slice $slice;
     private ReflectionClass $reflector;
+    private Filesystem $filesystem;
 
     abstract public function configure(Slice $slice): void;
 
@@ -28,6 +29,8 @@ abstract class SliceServiceProvider extends ServiceProvider
     public function register()
     {
         $this->reflector = $this->getReflector();
+
+        $this->filesystem = $this->app->make(Filesystem::class);
 
         $this->registeringSlice();
 
@@ -89,25 +92,23 @@ abstract class SliceServiceProvider extends ServiceProvider
     {
         $configDirectory = $this->slice->basePath('/../config');
 
-        $filesystem = $this->app->make(Filesystem::class);
-
-        if($filesystem->isDirectory($configDirectory))
+        if($this->filesystem->isDirectory($configDirectory))
         {
-            $fileNames = Collection::make(
-                    $filesystem->allFiles($configDirectory.'/')
-                )
+            $files = $this->filesystem->allFiles($configDirectory.'/');
+
+            Collection::make($files)
                 ->map(function (SplFileInfo $file): string {
                     return (string) Str::of($file->getRelativePathname())
                         ->before('.');
-                });
-
-            $fileNames->each(function(string $configFileName)
-                use($configDirectory): void {
-                    $this->mergeConfigFrom(
-                        "{$configDirectory}/{$configFileName}.php",
-                        "{$this->slice->name()}::{$configFileName}"
-                    );
-            });
+                })
+                ->each(function(string $configFileName)
+                    use($configDirectory): void {
+                        $this->mergeConfigFrom(
+                            "{$configDirectory}/{$configFileName}.php",
+                            "{$this->slice->name()}::{$configFileName}"
+                        );
+                }
+            );
         }
     }
 
@@ -115,7 +116,9 @@ abstract class SliceServiceProvider extends ServiceProvider
     {
         $routesDirectory = $this->slice->basePath('/../routes');
 
-        $this->loadRoutesFrom($routesDirectory);
+        $routeFiles = $this->directoryFiles($routesDirectory);
+
+        $this->loadRoutesFrom($routeFiles);
     }
 
     protected function registerTranslations(): void
@@ -158,6 +161,14 @@ abstract class SliceServiceProvider extends ServiceProvider
                 $feature->register($this->slice);
             }
         }
+    }
+
+    private function directoryFiles(string $path): Collection
+    {
+        return Collection::make($this->filesystem->files($path.'/'))
+            ->map(
+                fn(SplFileInfo $file): string => $file->getRelativePathname()
+            );
     }
 
     protected function getReflector(): ReflectionClass

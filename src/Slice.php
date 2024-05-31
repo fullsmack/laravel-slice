@@ -11,7 +11,6 @@ class Slice
     protected string $basePath;
     protected string $baseNamespace;
 
-    private bool $hasConfig = false;
     private bool $hasRoutes = false;
     private bool $hasTranslations = false;
     private bool $hasViews = false;
@@ -23,13 +22,6 @@ class Slice
     public function setName(string $name): static
     {
         $this->name = $name;
-
-        return $this;
-    }
-
-    public function useConfig(): static
-    {
-        $this->hasConfig = true;
 
         return $this;
     }
@@ -107,11 +99,6 @@ class Slice
     public function name(): string
     {
         return $this->name;
-    }
-
-    public function hasConfig(): bool
-    {
-        return $this->hasConfig;
     }
 
     public function hasRoutes(): bool
