@@ -11,6 +11,7 @@ use Symfony\Component\Finder\SplFileInfo;
 use ReflectionClass;
 
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\Feature;
 
 abstract class SliceServiceProvider extends ServiceProvider
 {
@@ -127,7 +128,7 @@ abstract class SliceServiceProvider extends ServiceProvider
     {
         foreach($this->slice->features() as $feature)
         {
-            if(method_exists($feature, 'register'))
+            if($feature instanceof Feature)
             {
                 $feature->register($this->slice);
             }
