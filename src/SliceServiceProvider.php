@@ -164,21 +164,21 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     public function registeringSlice(): void
     {
-        // Do nothing
+        //
     }
 
     public function sliceRegistered(): void
     {
-        // Do nothing
+        //
     }
 
     public function bootingSlice(): void
     {
-        // Do nothing
+        //
     }
 
     public function sliceBooted(): void
     {
-        // Do nothing
+        //
     }
 }
