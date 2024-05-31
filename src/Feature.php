@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Fullsmack\LaravelSlice;
+namespace FullSmack\LaravelSlice;
 
 use FullSmack\LaravelSlice\Slice;
 

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice;
 
-use Fullsmack\LaravelSlice\Feature;
+use FullSmack\LaravelSlice\Feature;
 
 class Slice
 {
