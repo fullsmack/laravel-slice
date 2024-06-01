@@ -47,8 +47,6 @@ abstract class SliceServiceProvider extends ServiceProvider
             throw SliceNotRegistered::becauseNameIsNotDefined();
         }
 
-        $this->registerConfig();
-
         $this->sliceRegistered();
 
         return $this;
@@ -57,6 +55,8 @@ abstract class SliceServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->bootingSlice();
+
+        $this->registerConfig();
 
         if($this->slice->hasRoutes())
         {

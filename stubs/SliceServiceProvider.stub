@@ -1,0 +1,15 @@
+<?php
+declare(strict_types=1);
+
+namespace Module\{{slicePascalName}};
+
+use FullSmack\LaravelSlice\SliceServiceProvider;
+use FullSmack\LaravelSlice\Slice;
+
+final class {{slicePascalName}}ServiceProvider extends SliceServiceProvider
+{
+    public function configure(Slice $slice): void
+    {
+        $slice->setName('{{sliceName}}');
+    }
+}
