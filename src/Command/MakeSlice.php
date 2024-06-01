@@ -43,16 +43,7 @@ class MakeSlice extends Command
      */
     public function handle()
     {
-        $sliceName = $this->argument('sliceName');
-
-        if (!$sliceName)
-        {
-            $this->error('Please provide a slice name as the first argument.');
-
-            return;
-        }
-
-        $this->defineSlice($sliceName);
+        $this->defineSliceUsingArgument();
 
         if(File::exists($this->slicePath))
         {

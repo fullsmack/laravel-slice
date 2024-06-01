@@ -22,9 +22,7 @@ class MakeTest extends TestMakeCommand
 
     public function handle()
     {
-        $sliceName = $this->option('slice');
-
-        $this->defineSlice($sliceName);
+        $this->defineSliceUsingOption();
 
         parent::handle();
     }
@@ -59,7 +57,7 @@ class MakeTest extends TestMakeCommand
      */
     protected function rootNamespace()
     {
-        if(!$this->sliceName)
+        if(!isset($this->sliceName))
         {
             return parent::rootNamespace();
         }
