@@ -22,6 +22,8 @@ class LaravelSliceServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        $this->registerConfig();
+
         $this->registerCommands();
     }
 
@@ -33,6 +35,11 @@ class LaravelSliceServiceProvider extends ServiceProvider
     public function register()
     {
         //
+    }
+
+    protected function registerConfig()
+    {
+        $this->mergeConfigFrom(__DIR__.'/../config/laravel-slice.php', 'laravel-slice');
     }
 
     protected function registerCommands(): void
