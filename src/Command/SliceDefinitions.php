@@ -43,7 +43,7 @@ trait SliceDefinitions
 
     private function defineSlice(string $sliceName): void
     {
-        $config = $this->app->make(Repository::class)->get('laravel-slice');
+        $config = config('laravel-slice');
 
         $this->sliceName = Str::kebab($sliceName);
 
