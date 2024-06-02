@@ -24,6 +24,8 @@ class LaravelSliceServiceProvider extends ServiceProvider
     {
         $this->registerConfig();
 
+        $this->publishesConfig();
+
         $this->registerCommands();
     }
 
@@ -40,6 +42,17 @@ class LaravelSliceServiceProvider extends ServiceProvider
     protected function registerConfig()
     {
         $this->mergeConfigFrom(__DIR__.'/../config/laravel-slice.php', 'laravel-slice');
+    }
+
+    protected function publishesConfig()
+    {
+        if ($this->app->runningInConsole())
+        {
+            $this->publishes([
+                __DIR__.'/../config/laravel-slice.php' => config_path('laravel-slice.php'),
+            ], 'config');
+
+        }
     }
 
     protected function registerCommands(): void
