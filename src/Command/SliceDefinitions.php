@@ -3,12 +3,17 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Command;
 
+use Illuminate\Config\Repository;
 use Illuminate\Support\Str;
 
 trait SliceDefinitions
 {
     private string $sliceName;
     private string $slicePath;
+    private string $sliceRootFolder;
+    private string $sliceRootNamespace;
+    private string $sliceTestFolder;
+    private string $sliceTestNamespace;
 
     private function defineSliceUsingArgument(): void
     {
@@ -38,7 +43,13 @@ trait SliceDefinitions
 
     private function defineSlice(string $sliceName): void
     {
+        $config = $this->app->make(Repository::class)->get('laravel-slice');
+
         $this->sliceName = Str::kebab($sliceName);
-        $this->slicePath = base_path("src/{$sliceName}");
+
+        $this->sliceRootFolder = $config['root']['folder'];
+        $this->sliceRootNamespace = $config['root']['namespace'];
+        $this->sliceTestNamespace = $config['test']['namespace'];
+        $this->slicePath = base_path("{$this->sliceRootFolder}/{$sliceName}");
     }
 }

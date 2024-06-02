@@ -62,7 +62,9 @@ class MakeTest extends TestMakeCommand
             return parent::rootNamespace();
         }
 
-        return 'Test\\'. Str::studly($this->sliceName);
+        $slicePascalName = Str::studly($this->sliceName);
+
+        return "{$this->sliceTestNamespace}\\{$slicePascalName}";
     }
 
     /**

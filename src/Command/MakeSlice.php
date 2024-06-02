@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 use FullSmack\LaravelSlice\Command\SliceDefinitions;
-use FullSmack\LaravelSlice\SliceAlreadyExists;
 
 class MakeSlice extends Command
 {
@@ -72,8 +71,8 @@ class MakeSlice extends Command
         $serviceProviderContent = File::get($stubPath);
 
         $serviceProviderContent = Str::replace(
-            ['{{slicePascalName}}', '{{sliceName}}'],
-            [$slicePascalName, $this->sliceName],
+            ['{{sliceRootNamespace}}','{{slicePascalName}}', '{{sliceName}}'],
+            [$this->sliceRootNamespace, $slicePascalName, $this->sliceName],
             $serviceProviderContent
         );
 
@@ -81,6 +80,59 @@ class MakeSlice extends Command
 
         File::put($serviceProviderPath, $serviceProviderContent);
 
+        $this->updateComposerJson();
+        $this->runComposerDumpAutoload();
+
         $this->info("Slice \"{$this->sliceName}\" created successfully.");
+    }
+
+    private function updateComposerJson()
+    {
+        $composerFile = base_path('composer.json');
+        $composerData = File::json($composerFile);
+
+        $slicePascalName = Str::studly($this->sliceName);
+
+        $sliceRoot = "{$this->sliceRootFolder}/{$this->sliceName}";
+        $namespace = "{$this->sliceRootNamespace}\\{$slicePascalName}";
+
+        $testNamespace = "{$this->sliceTestNamespace}\\{$slicePascalName}";
+
+        // Update autoload section
+        if (!isset($composerData['autoload']['psr-4'][$namespace . '\\']))
+        {
+            $composerData['autoload']['psr-4'][$namespace . '\\'] = "{$sliceRoot}/src/";
+        }
+
+        // Update autoload-dev section
+        if (!isset($composerData['autoload-dev']['psr-4'][$testNamespace . '\\']))
+        {
+            $composerData['autoload-dev']['psr-4'][$testNamespace . '\\'] = "{$sliceRoot}/tests/";
+        }
+
+        // Update extra section for Laravel providers
+        if (!isset($composerData['extra']['laravel']['providers']))
+        {
+            $composerData['extra']['laravel']['providers'] = [];
+        }
+
+        $providerClass = "{$namespace}\\{$slicePascalName}ServiceProvider";
+
+        if (!in_array($providerClass, $composerData['extra']['laravel']['providers']))
+        {
+            $composerData['extra']['laravel']['providers'][] = $providerClass;
+        }
+
+        // Save the updated composer.json
+        file_put_contents($composerFile, json_encode($composerData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    protected function runComposerDumpAutoload()
+    {
+        $process = new \Symfony\Component\Process\Process(['composer', 'dump-autoload']);
+        $process->setWorkingDirectory(base_path());
+        $process->run(function ($type, $buffer) {
+            echo $buffer;
+        });
     }
 }
