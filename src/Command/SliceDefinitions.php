@@ -48,8 +48,14 @@ trait SliceDefinitions
         $this->sliceName = Str::kebab($sliceName);
 
         $this->sliceRootFolder = $config['root']['folder'];
-        $this->sliceRootNamespace = $config['root']['namespace'];
-        $this->sliceTestNamespace = $config['test']['namespace'];
         $this->slicePath = base_path("{$this->sliceRootFolder}/{$sliceName}");
+
+        $this->sliceRootNamespace = Str::studly($config['root']['namespace']);
+        $this->sliceTestNamespace = Str::studly($config['test']['namespace']);
+    }
+
+    private function createInSlice(): bool
+    {
+        return isset($this->sliceName) && $this->sliceName;
     }
 }

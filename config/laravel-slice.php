@@ -3,10 +3,10 @@
 return [
     'root' => [
         'folder' => 'src',
-        'namespace' => 'Module',
+        'namespace' => 'module',
     ],
     'test' => [
-        'namespace' => 'Test',
+        'namespace' => 'test',
     ],
     'architecture' => [
         'default' => [
