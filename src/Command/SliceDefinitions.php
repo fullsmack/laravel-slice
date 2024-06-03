@@ -47,7 +47,7 @@ trait SliceDefinitions
 
         $this->sliceName = Str::kebab($sliceName);
 
-        $this->sliceRootFolder = $config['root']['folder'];
+        $this->sliceRootFolder = Str::lower($config['root']['folder']);
         $this->slicePath = base_path("{$this->sliceRootFolder}/{$sliceName}");
 
         $this->sliceRootNamespace = Str::studly($config['root']['namespace']);
