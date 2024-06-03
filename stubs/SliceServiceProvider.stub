@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace {{sliceRootNamepace}}\{{slicePascalName}};
+namespace {{sliceRootNamespace}}\{{slicePascalName}};
 
 use FullSmack\LaravelSlice\SliceServiceProvider;
 use FullSmack\LaravelSlice\Slice;
