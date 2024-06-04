@@ -58,4 +58,34 @@ trait SliceDefinitions
     {
         return isset($this->sliceName) && $this->sliceName;
     }
+
+    protected function rootNamespace()
+    {
+        return $this->sliceRootNamespace.'\\'.Str::studly($this->sliceName).'\\';
+    }
+
+    protected function getPath($name)
+    {
+        $name = Str::replaceFirst($this->rootNamespace(), '', $name);
+
+        return $this->slicePath .'/src/'. str_replace('\\', '/', $name) .'.php';
+    }
+
+    /**
+     * Get the first view directory path from the application configuration.
+     *
+     * @param  string  $path
+     * @return string
+     */
+    protected function viewPath($path = '')
+    {
+        if(!$this->createInSlice())
+        {
+            return parent::viewPath($path);
+        }
+
+        $views = $this->slicePath.'/resources/views';
+
+        return $views.($path ? DIRECTORY_SEPARATOR.$path : $path);
+    }
 }
