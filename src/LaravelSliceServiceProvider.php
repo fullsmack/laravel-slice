@@ -7,12 +7,14 @@ use Illuminate\Support\ServiceProvider;
 
 use FullSmack\LaravelSlice\Command\MakeSlice;
 use FullSmack\LaravelSlice\Command\MakeTest;
+use FullSmack\LaravelSlice\Command\MakeComponent;
 
 class LaravelSliceServiceProvider extends ServiceProvider
 {
     protected $commands = [
         MakeSlice::class,
         MakeTest::class,
+        MakeComponent::class,
     ];
 
     /**
