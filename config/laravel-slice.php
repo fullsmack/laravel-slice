@@ -8,6 +8,9 @@ return [
     'test' => [
         'namespace' => 'test',
     ],
+    'discovery' => [
+        'type' => 'composer',
+    ],
     'architecture' => [
         'default' => [
             'controller' => 'http.controllers',

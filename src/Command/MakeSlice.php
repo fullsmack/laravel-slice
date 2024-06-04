@@ -110,17 +110,20 @@ class MakeSlice extends Command
             $composerData['autoload-dev']['psr-4'][$testNamespace . '\\'] = "{$sliceRoot}/tests/";
         }
 
-        // Update extra section for Laravel providers
-        if (!isset($composerData['extra']['laravel']['providers']))
-        {
-            $composerData['extra']['laravel']['providers'] = [];
-        }
-
         $providerClass = "{$namespace}\\{$slicePascalName}ServiceProvider";
 
-        if (!in_array($providerClass, $composerData['extra']['laravel']['providers']))
+        if(config('laravel-slice.discovery.type') === 'composer')
         {
-            $composerData['extra']['laravel']['providers'][] = $providerClass;
+            // Update extra section for Laravel providers
+            if (!isset($composerData['extra']['laravel']['providers']))
+            {
+                $composerData['extra']['laravel']['providers'] = [];
+            }
+
+            if (!in_array($providerClass, $composerData['extra']['laravel']['providers']))
+            {
+                $composerData['extra']['laravel']['providers'][] = $providerClass;
+            }
         }
 
         // Save the updated composer.json
