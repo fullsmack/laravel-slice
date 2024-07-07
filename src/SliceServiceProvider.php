@@ -141,7 +141,7 @@ abstract class SliceServiceProvider extends ServiceProvider
         $viewDirectory = $this->slice->basePath('/../resources/views');
 
         $viewPaths = [
-            $viewDirectory.'/',
+            $viewDirectory,
         ];
 
         $this->loadViewsFrom($viewPaths, $this->slice->name());
