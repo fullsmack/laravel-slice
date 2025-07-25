@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice;
 
 use FullSmack\LaravelSlice\Feature;
+use Illuminate\Console\Command;
 
 class Slice
 {
@@ -15,6 +16,9 @@ class Slice
     private bool $hasTranslations = false;
     private bool $hasViews = false;
     private bool $hasMigrations = false;
+
+    /** @var array<class-string<Command>> */
+    private array $commands = [];
 
     /** @var array<Feature> */
     private array $features = [];
@@ -50,6 +54,14 @@ class Slice
     public function useMigrations(): static
     {
         $this->hasMigrations = true;
+
+        return $this;
+    }
+
+    /** @param array<class-string<Command>> */
+    public function withCommands(array $commands = []): static
+    {
+        $this->commands = $commands;
 
         return $this;
     }
@@ -121,6 +133,13 @@ class Slice
         return $this->hasMigrations;
     }
 
+    /** @return array<class-string<Command>> */
+    public function commands(): array
+    {
+        return $this->commands;
+    }
+
+    /** @return array<Feature> */
     public function features(): array
     {
         return $this->features;

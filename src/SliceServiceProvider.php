@@ -77,6 +77,13 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         if($this->app->runningInConsole())
         {
+            $commands = $this->slice->commands();
+
+            if($commands !== [])
+            {
+                $this->commands($commands);
+            }
+
             if($this->slice->hasMigrations())
             {
                 $this->registerMigrations();
