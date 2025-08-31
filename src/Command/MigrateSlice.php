@@ -2,24 +2,9 @@
 namespace FullSmack\LaravelSlice\Command;
 
 use Illuminate\Database\Console\Migrations\MigrateCommand;
-use Symfony\Component\Console\Input\InputOption;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 
-/**
- * MigrateSlice Command
- *
- * Extends and overrides Laravel's migrate command to support slice-specific migrations.
- *
- * Usage:
- * - php artisan migrate --slice=slice-name (runs slice-specific migrations)
- * - php artisan migrate (runs default Laravel migrations when no slice specified)
- *
- * Features:
- * - Runs migrations from slice's database/migrations directory
- * - Supports slice-specific database connections via config('slice-name::database.default')
- * - Falls back to default Laravel behavior when no slice is specified
- */
 class MigrateSlice extends MigrateCommand
 {
     use SliceDefinitions;
@@ -35,6 +20,7 @@ class MigrateSlice extends MigrateCommand
                         {--seeder= : The class name of the root seeder}
                         {--step : Force the migrations to be run so they can be rolled back individually}
                         {--slice= : Run migrations for a specific slice}';
+
     protected $description = 'Run the database migrations';
 
     public function handle()
@@ -95,7 +81,7 @@ class MigrateSlice extends MigrateCommand
                 '--seeder' => $this->option('seeder'),
                 '--step' => $this->option('step'),
             ],
-            fn (mixed $value): bool => $value !== null && $value !== false && $value !== ''
+            static fn (mixed $value): bool => $value !== null && $value !== false && $value !== '',
         );
 
         $this->line("Running migrations for slice: {$this->sliceName}");
