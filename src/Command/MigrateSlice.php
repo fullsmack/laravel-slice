@@ -32,6 +32,13 @@ class MigrateSlice extends MigrateCommand
             return parent::handle();
         }
 
+        // Check if slice uses connection-based migrations
+        if (!$this->sliceUsesConnection())
+        {
+            $this->error("Slice '{$this->sliceName}' is not configured to use a separate connection. Use regular 'php artisan migrate' instead.");
+            return 1;
+        }
+
         // Validate conflicting options when --slice is specified
         if ($this->option('path'))
         {
@@ -70,6 +77,12 @@ class MigrateSlice extends MigrateCommand
 
         $connection = config($this->sliceName . '::database.default');
 
+        if (!$connection)
+        {
+            $this->error("Slice '{$this->sliceName}' is configured to use a connection but no default connection is defined in config/{$this->sliceName}::database.default");
+            return 1;
+        }
+
         $params = array_filter([
                 '--path' => $migrationPath,
                 '--database' => $connection,
@@ -93,5 +106,11 @@ class MigrateSlice extends MigrateCommand
         }
 
         return Artisan::call(MigrateCommand::class, $params);
+    }
+
+    private function sliceUsesConnection(): bool
+    {
+        // Check if the slice has a database configuration
+        return config()->has($this->sliceName . '::database');
     }
 }

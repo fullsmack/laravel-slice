@@ -84,7 +84,7 @@ abstract class SliceServiceProvider extends ServiceProvider
                 $this->commands($commands);
             }
 
-            if($this->slice->hasMigrations())
+            if($this->slice->hasMigrations() && !$this->slice->usesConnection())
             {
                 $this->registerMigrations();
             }

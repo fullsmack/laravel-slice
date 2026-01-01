@@ -16,6 +16,7 @@ class Slice
     private bool $hasTranslations = false;
     private bool $hasViews = false;
     private bool $hasMigrations = false;
+    private bool $usesConnection = false;
 
     /** @var array<class-string<Command>> */
     private array $commands = [];
@@ -54,6 +55,13 @@ class Slice
     public function useMigrations(): static
     {
         $this->hasMigrations = true;
+
+        return $this;
+    }
+
+    public function useConnection(): static
+    {
+        $this->usesConnection = true;
 
         return $this;
     }
@@ -131,6 +139,11 @@ class Slice
     public function hasMigrations(): bool
     {
         return $this->hasMigrations;
+    }
+
+    public function usesConnection(): bool
+    {
+        return $this->usesConnection;
     }
 
     /** @return array<class-string<Command>> */
