@@ -75,11 +75,11 @@ class MigrateSlice extends MigrateCommand
             return 0;
         }
 
-        $connection = config($this->sliceName . '::database.default');
+        $connection = $this->getSliceConnection();
 
         if (!$connection)
         {
-            $this->error("Slice '{$this->sliceName}' is configured to use a connection but no default connection is defined in config/{$this->sliceName}::database.default");
+            $this->error("Slice '{$this->sliceName}' is configured to use a connection but no connection is defined. Use ->useConnection('connection-name') when configuring the slice.");
             return 1;
         }
 
@@ -106,11 +106,5 @@ class MigrateSlice extends MigrateCommand
         }
 
         return Artisan::call(MigrateCommand::class, $params);
-    }
-
-    private function sliceUsesConnection(): bool
-    {
-        // Check if the slice has a database configuration
-        return config()->has($this->sliceName . '::database');
     }
 }

@@ -17,9 +17,13 @@ class Slice
     private bool $hasViews = false;
     private bool $hasMigrations = false;
     private bool $usesConnection = false;
+    private ?string $connection = null;
 
     /** @var array<class-string<Command>> */
     private array $commands = [];
+
+    /** @var array<string, Slice> */
+    private static array $registry = [];
 
     /** @var array<Feature> */
     private array $features = [];
@@ -59,14 +63,32 @@ class Slice
         return $this;
     }
 
-    public function useConnection(): static
+    public function useConnection(?string $connection = null): static
     {
         $this->usesConnection = true;
+        $this->connection = $connection;
 
         return $this;
     }
 
-    /** @param array<class-string<Command>> */
+    public function connection(): ?string
+    {
+        if ($this->connection !== null)
+        {
+            return $this->connection;
+        }
+
+        if ($this->usesConnection)
+        {
+            return config($this->name . '::database.default');
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<class-string<Command>>
+     */
     public function withCommands(array $commands = []): static
     {
         $this->commands = $commands;
@@ -146,15 +168,57 @@ class Slice
         return $this->usesConnection;
     }
 
-    /** @return array<class-string<Command>> */
+    /**
+     * @return array<class-string<Command>>
+     */
     public function commands(): array
     {
         return $this->commands;
     }
 
-    /** @return array<Feature> */
+    /**
+     * @return array<Feature>
+     */
     public function features(): array
     {
         return $this->features;
+    }
+
+    public function migrationPath(): string
+    {
+        return $this->basePath('/../database/migrations');
+    }
+
+    public static function register(Slice $slice): void
+    {
+        static::$registry[$slice->name()] = $slice;
+    }
+
+    public static function get(string $name): Slice
+    {
+        if (!isset(static::$registry[$name]))
+        {
+            throw SliceNotRegistered::becauseSliceIsNotRegistered($name);
+        }
+
+        return static::$registry[$name];
+    }
+
+    public static function has(string $name): bool
+    {
+        return isset(static::$registry[$name]);
+    }
+
+    /**
+     * @return array<string, Slice>
+     */
+    public static function all(): array
+    {
+        return static::$registry;
+    }
+
+    public static function clearRegistry(): void
+    {
+        static::$registry = [];
     }
 }

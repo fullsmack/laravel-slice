@@ -3,12 +3,13 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice;
 
+use ReflectionClass;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Filesystem\Filesystem;
 use Symfony\Component\Finder\SplFileInfo;
-use ReflectionClass;
+use Illuminate\Database\Eloquent\Model;
 
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\Feature;
@@ -26,6 +27,9 @@ abstract class SliceServiceProvider extends ServiceProvider
         return new Slice();
     }
 
+    /**
+     * @return static
+     */
     public function register()
     {
         $this->reflector = $this->getReflector();
@@ -46,6 +50,8 @@ abstract class SliceServiceProvider extends ServiceProvider
         {
             throw SliceNotRegistered::becauseNameIsNotDefined();
         }
+
+        Slice::register($this->slice);
 
         $this->sliceRegistered();
 
@@ -104,7 +110,7 @@ abstract class SliceServiceProvider extends ServiceProvider
             $files = $this->filesystem->allFiles($configDirectory.'/');
 
             Collection::make($files)
-                ->map(function (SplFileInfo $file): string {
+                ->map(static function (SplFileInfo $file): string {
                     return (string) Str::of($file->getRelativePathname())
                         ->before('.');
                 })
@@ -172,11 +178,15 @@ abstract class SliceServiceProvider extends ServiceProvider
         }
     }
 
+    /**
+     * @param string $path
+     * @return Collection<int, string>
+     */
     private function directoryFiles(string $path): Collection
     {
         return Collection::make($this->filesystem->files($path.'/'))
             ->map(
-                fn(SplFileInfo $file): string => $file->getRelativePathname()
+                static fn(SplFileInfo $file): string => $file->getRelativePathname()
             );
     }
 
@@ -213,5 +223,33 @@ abstract class SliceServiceProvider extends ServiceProvider
     public function sliceBooted(): void
     {
         //
+    }
+
+    /**
+     * Bind the slice's connection to multiple model classes.
+     *
+     * This sets the default connection for all specified models to use
+     * the connection defined via $slice->useConnection().
+     *
+     * Models must use the UsesConnection trait for this to work.
+     *
+     * @param class-string<Model> ...$modelClasses
+     */
+    protected function bindModelsToConnection(string ...$modelClasses): void
+    {
+        if (!$this->slice->usesConnection())
+        {
+            return;
+        }
+
+        $connection = $this->slice->connection();
+
+        foreach ($modelClasses as $modelClass)
+        {
+            if (method_exists($modelClass, 'useConnection'))
+            {
+                $modelClass::useConnection($connection);
+            }
+        }
     }
 }

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Command;
 
-use Illuminate\Config\Repository;
+use FullSmack\LaravelSlice\Slice;
 use Illuminate\Support\Str;
 
 trait SliceDefinitions
@@ -57,6 +57,35 @@ trait SliceDefinitions
     private function createInSlice(): bool
     {
         return isset($this->sliceName) && $this->sliceName;
+    }
+
+    private function getRegisteredSlice(): ?Slice
+    {
+        if (!$this->createInSlice())
+        {
+            return null;
+        }
+
+        if (!Slice::has($this->sliceName))
+        {
+            return null;
+        }
+
+        return Slice::get($this->sliceName);
+    }
+
+    private function sliceUsesConnection(): bool
+    {
+        $slice = $this->getRegisteredSlice();
+
+        return $slice !== null && $slice->usesConnection();
+    }
+
+    private function getSliceConnection(): ?string
+    {
+        $slice = $this->getRegisteredSlice();
+
+        return $slice?->connection();
     }
 
     protected function rootNamespace()
