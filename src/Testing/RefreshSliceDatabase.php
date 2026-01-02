@@ -31,7 +31,7 @@ trait RefreshSliceDatabase
     {
         if (!Slice::has($sliceName))
         {
-            throw SliceNotRegistered::becauseSliceIsNotRegistered($sliceName);
+            throw SliceNotRegistered::becauseSliceIsNotAddedToRegistry($sliceName);
         }
 
         $slice = Slice::get($sliceName);

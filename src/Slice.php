@@ -198,7 +198,7 @@ class Slice
     {
         if (!isset(static::$registry[$name]))
         {
-            throw SliceNotRegistered::becauseSliceIsNotRegistered($name);
+            throw SliceNotRegistered::becauseSliceIsNotAddedToRegistry($name);
         }
 
         return static::$registry[$name];
