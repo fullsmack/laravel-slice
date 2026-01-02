@@ -6,7 +6,7 @@ namespace FullSmack\LaravelSlice\Database;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Facades\Schema;
 
-trait MigrationConnection
+trait SliceMigration
 {
     protected function schema(): Builder
     {

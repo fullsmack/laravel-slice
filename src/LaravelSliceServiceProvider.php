@@ -8,6 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use FullSmack\LaravelSlice\Command\MakeSlice;
 use FullSmack\LaravelSlice\Command\MakeTest;
 use FullSmack\LaravelSlice\Command\MakeComponent;
+use FullSmack\LaravelSlice\Command\MakeMigration;
 use FullSmack\LaravelSlice\Command\MigrateSlice;
 
 class LaravelSliceServiceProvider extends ServiceProvider
@@ -16,6 +17,7 @@ class LaravelSliceServiceProvider extends ServiceProvider
         MakeSlice::class,
         MakeTest::class,
         MakeComponent::class,
+        MakeMigration::class,
         MigrateSlice::class,
     ];
 
