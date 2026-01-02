@@ -11,15 +11,6 @@ use Illuminate\Support\Facades\Route;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceServiceProvider;
 
-class SliceFileLoadingTest extends SliceServiceProvider
-{
-    public function configure(Slice $slice): void
-    {
-        $slice->setName('file-test');
-        // Don't enable any features by default - let individual tests enable them
-    }
-}
-
 class SliceFileLoadingTest extends TestCase
 {
     private string $tempSliceDir;
@@ -184,9 +175,9 @@ class SliceFileLoadingTest extends TestCase
         $this->assertEquals('Welcome to our app', __('Welcome'));
     }
 
-    private function createProviderWithTempPath(callable $configureCallback = null): FileLoadingSliceServiceProvider
+    private function createProviderWithTempPath(callable $configureCallback = null): SliceServiceProvider
     {
-        $provider = new class($this->app, $this->tempSliceDir, $configureCallback) extends FileLoadingSliceServiceProvider {
+        return new class($this->app, $this->tempSliceDir, $configureCallback) extends SliceServiceProvider {
             private string $tempPath;
             private $configureCallback;
 
@@ -199,7 +190,7 @@ class SliceFileLoadingTest extends TestCase
 
             public function configure(Slice $slice): void
             {
-                parent::configure($slice); // Set the name
+                $slice->setName('file-test');
 
                 if ($this->configureCallback) {
                     ($this->configureCallback)($slice);
@@ -212,7 +203,5 @@ class SliceFileLoadingTest extends TestCase
                 return $this->tempPath . '/src';
             }
         };
-
-        return $provider;
     }
 }

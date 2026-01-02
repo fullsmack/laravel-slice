@@ -10,68 +10,15 @@ use FullSmack\LaravelSlice\SliceServiceProvider;
 use FullSmack\LaravelSlice\Feature;
 
 /**
- * Mock LivewireComponents feature to demonstrate the pattern
- */
-class ExampleUsageTest implements Feature
-{
-    public bool $registered = false;
-
-    public function register(Slice $slice): void
-    {
-        $this->registered = true;
-    }
-}
-
-/**
- * Example slice service provider following the pattern from the user's code
- */
-class ExampleUsageTest extends SliceServiceProvider
-{
-    private MockLivewireComponents $livewireComponents;
-
-    public function __construct($app)
-    {
-        parent::__construct($app);
-        $this->livewireComponents = new MockLivewireComponents();
-    }
-
-    public function configure(Slice $slice): void
-    {
-        $slice->setName('pizza')
-            ->withFeature($this->livewireComponents);
-        // Don't enable directory-dependent features in tests
-    }
-
-    public function sliceRegistered(): void
-    {
-        // Custom logic after slice is registered
-    }
-
-    public function sliceBooted(): void
-    {
-        // Custom logic after slice is booted
-    }
-
-    public function getLivewireComponents(): MockLivewireComponents
-    {
-        return $this->livewireComponents;
-    }
-
-    public function getSlice(): Slice
-    {
-        return $this->slice;
-    }
-}
-
-/**
  * Test the example usage pattern
  */
 class ExampleUsageTest extends TestCase
 {
     #[Test]
-    public function it_demonstrates_the_pizza_slice_registration_pattern(): void
+    public function it_demonstrates_the_example_slice_registration_pattern(): void
     {
-        $provider = new PizzaSliceServiceProvider($this->app);
+        $feature = $this->createFeature();
+        $provider = $this->createExampleSliceProvider($feature);
 
         $provider->register();
         $provider->boot();
@@ -79,7 +26,7 @@ class ExampleUsageTest extends TestCase
         $slice = $provider->getSlice();
 
         // Assert the slice was configured correctly
-        $this->assertSame('pizza', $slice->name());
+        $this->assertSame('example', $slice->name());
         $this->assertFalse($slice->hasRoutes());
         $this->assertFalse($slice->hasViews());
         $this->assertFalse($slice->hasTranslations());
@@ -87,7 +34,7 @@ class ExampleUsageTest extends TestCase
 
         // Assert the feature was registered
         $this->assertCount(1, $slice->features());
-        $this->assertInstanceOf(MockLivewireComponents::class, $slice->features()[0]);
+        $this->assertInstanceOf(Feature::class, $slice->features()[0]);
         $this->assertTrue($provider->getLivewireComponents()->registered);
     }
 
@@ -97,14 +44,14 @@ class ExampleUsageTest extends TestCase
         $slice = new Slice();
 
         // This mirrors the configuration pattern from the user's example
-        $result = $slice->setName('pizza')
-            ->withFeature(new MockLivewireComponents());
+        $result = $slice->setName('example')
+            ->withFeature($this->createFeature());
 
         // Should support method chaining
         $this->assertSame($slice, $result);
 
         // Should have all the configured options
-        $this->assertSame('pizza', $slice->name());
+        $this->assertSame('example', $slice->name());
         $this->assertFalse($slice->hasRoutes());
         $this->assertFalse($slice->hasViews());
         $this->assertFalse($slice->hasTranslations());
@@ -147,5 +94,58 @@ class ExampleUsageTest extends TestCase
 
         $this->assertContains('sliceRegistered', $hooksCalled);
         $this->assertContains('sliceBooted', $hooksCalled);
+    }
+
+    private function createFeature(): Feature
+    {
+        return new class implements Feature
+        {
+            public bool $registered = false;
+
+            public function register(Slice $slice): void
+            {
+                $this->registered = true;
+            }
+        };
+    }
+
+    private function createExampleSliceProvider(Feature $feature): SliceServiceProvider
+    {
+        return new class($this->app, $feature) extends SliceServiceProvider
+        {
+            private Feature $livewireComponents;
+
+            public function __construct($app, Feature $feature)
+            {
+                parent::__construct($app);
+                $this->livewireComponents = $feature;
+            }
+
+            public function configure(Slice $slice): void
+            {
+                $slice->setName('example')
+                    ->withFeature($this->livewireComponents);
+            }
+
+            public function sliceRegistered(): void
+            {
+                // Custom logic after slice is registered
+            }
+
+            public function sliceBooted(): void
+            {
+                // Custom logic after slice is booted
+            }
+
+            public function getLivewireComponents(): Feature
+            {
+                return $this->livewireComponents;
+            }
+
+            public function getSlice(): Slice
+            {
+                return $this->slice;
+            }
+        };
     }
 }

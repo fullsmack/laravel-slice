@@ -13,7 +13,7 @@ class FeatureTest extends TestCase
     #[Test]
     public function it_can_be_implemented(): void
     {
-        $feature = new class FeatureTest Feature {
+        $feature = new class implements Feature {
             public bool $registerCalled = false;
 
             public function register(Slice $slice): void
@@ -34,7 +34,7 @@ class FeatureTest extends TestCase
         $slice = new Slice();
         $slice->setName('test-slice');
 
-        $feature = new class FeatureTest Feature {
+        $feature = new class implements Feature {
             public ?Slice $receivedSlice = null;
 
             public function register(Slice $slice): void

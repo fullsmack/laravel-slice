@@ -14,69 +14,65 @@ use FullSmack\LaravelSlice\SliceServiceProvider;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\Feature;
 
-class SliceServiceProviderTest extends SliceServiceProvider
-{
-    public function configure(Slice $slice): void
-    {
-        $slice->setName('test-slice');
-        // Don't enable features that require directories for basic tests
-    }
-}
-
-class SliceServiceProviderTest extends SliceServiceProvider
-{
-    public function configure(Slice $slice): void
-    {
-        // Intentionally empty to test exception
-    }
-}
-
-class SliceServiceProviderTest implements Feature
-{
-    public bool $registered = false;
-
-    public function register(Slice $slice): void
-    {
-        $this->registered = true;
-    }
-}
-
-class SliceServiceProviderTest extends SliceServiceProvider
-{
-    public TestFeature $feature;
-
-    public function __construct($app)
-    {
-        parent::__construct($app);
-        $this->feature = new TestFeature();
-    }
-
-    public function configure(Slice $slice): void
-    {
-        $slice->setName('feature-slice')
-            ->withFeature($this->feature);
-    }
-}
-
 class SliceServiceProviderTest extends TestCase
 {
-    #[Test]
-    public function it_throws_exception_when_slice_name_is_not_defined(): void
-    {
-        $this->expectException(SliceNotRegistered::class);
-        $this->expectExceptionMessage(
-            'This slice does not have a name.' .
-            'You can set one with `$slice->setName("slice-name")`'
-        );
+    private array $hooksCalled = [];
 
-        $provider = new EmptySliceServiceProvider($this->app);
-        $provider->register();
+    private function createTestProvider(): SliceServiceProvider
+    {
+        return new class($this->app) extends SliceServiceProvider {
+            public function configure(Slice $slice): void
+            {
+                $slice->setName('test-slice');
+            }
+        };
+    }
+
+    private function createEmptyProvider(): SliceServiceProvider
+    {
+        return new class($this->app) extends SliceServiceProvider {
+            public function configure(Slice $slice): void
+            {
+                // Intentionally empty to test exception
+            }
+        };
+    }
+
+    private function createMockFeature(): Feature
+    {
+        return new class implements Feature {
+            public bool $registered = false;
+
+            public function register(Slice $slice): void
+            {
+                $this->registered = true;
+            }
+        };
+    }
+
+    private function createProviderWithFeature(Feature $feature): SliceServiceProvider
+    {
+        return new class($this->app, $feature) extends SliceServiceProvider {
+            public Feature $feature;
+
+            public function __construct($app, Feature $feature)
+            {
+                parent::__construct($app);
+                $this->feature = $feature;
+            }
+
+            public function configure(Slice $slice): void
+            {
+                $slice->setName('feature-slice')
+                    ->withFeature($this->feature);
+            }
+        };
     }
 
     #[Test]
-    public function it_can_register_a_slice_with_name(): void
+    public function it_registers_a_slice_with_name(): void
     {
-        $provider = new TestSliceServiceProvider($this->app);
+        $provider = $this->createTestProvider();
 
         $result = $provider->register();
 
@@ -84,9 +80,22 @@ class SliceServiceProviderTest extends TestCase
     }
 
     #[Test]
-    public function it_can_boot_a_slice(): void
+    public function it_fails_to_register_slice_when_slice_name_is_not_defined(): void
     {
-        $provider = new TestSliceServiceProvider($this->app);
+        $this->expectException(SliceNotRegistered::class);
+        $this->expectExceptionMessage(
+            'This slice does not have a name.' .
+            'You can set one with `$slice->setName("slice-name")`'
+        );
+
+        $provider = $this->createEmptyProvider();
+        $provider->register();
+    }
+
+    #[Test]
+    public function it_boots_a_slice(): void
+    {
+        $provider = $this->createTestProvider();
         $provider->register();
 
         $result = $provider->boot();
@@ -97,20 +106,21 @@ class SliceServiceProviderTest extends TestCase
     #[Test]
     public function it_registers_features_when_booting(): void
     {
-        $provider = new SliceServiceProviderWithFeature($this->app);
+        $feature = $this->createMockFeature();
+        $provider = $this->createProviderWithFeature($feature);
         $provider->register();
 
-        $this->assertFalse($provider->feature->registered);
+        $this->assertFalse($feature->registered);
 
         $provider->boot();
 
-        $this->assertTrue($provider->feature->registered);
+        $this->assertTrue($feature->registered);
     }
 
     #[Test]
     public function it_sets_base_path_from_provider_location(): void
     {
-        $provider = new TestSliceServiceProvider($this->app);
+        $provider = $this->createTestProvider();
         $provider->register();
 
         // Use reflection to access the protected slice property
@@ -119,14 +129,15 @@ class SliceServiceProviderTest extends TestCase
         $sliceProperty->setAccessible(true);
         $slice = $sliceProperty->getValue($provider);
 
-        $expectedPath = dirname((new \ReflectionClass(TestSliceServiceProvider::class))->getFileName());
+        // Anonymous classes are defined in this test file
+        $expectedPath = dirname((new \ReflectionClass($provider))->getFileName());
         $this->assertSame($expectedPath, $slice->basePath());
     }
 
     #[Test]
     public function it_sets_base_namespace_from_provider_namespace(): void
     {
-        $provider = new TestSliceServiceProvider($this->app);
+        $provider = $this->createTestProvider();
         $provider->register();
 
         // Use reflection to access the protected slice property
@@ -135,19 +146,16 @@ class SliceServiceProviderTest extends TestCase
         $sliceProperty->setAccessible(true);
         $slice = $sliceProperty->getValue($provider);
 
-        $expectedNamespace = (new \ReflectionClass(TestSliceServiceProvider::class))->getNamespaceName();
+        $expectedNamespace = (new \ReflectionClass($provider))->getNamespaceName();
         $this->assertSame($expectedNamespace, $slice->baseNamespace());
     }
-}
-
-class SliceServiceProviderTest extends TestCase
-{
-    private array $hooksCalled = [];
 
     #[Test]
     public function it_calls_lifecycle_hooks_in_correct_order(): void
     {
-        $provider = new class($this->app, $this->hooksCalled) extends SliceServiceProvider {
+        $hooksCalled = &$this->hooksCalled;
+
+        $provider = new class($this->app, $hooksCalled) extends SliceServiceProvider {
             private array $hooksCalled;
 
             public function __construct($app, array &$hooksCalled = [])

@@ -9,51 +9,59 @@ use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceServiceProvider;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 
-class SliceDirectoryValidationTest extends SliceServiceProvider
-{
-    public function configure(Slice $slice): void
-    {
-        $slice->setName('route-test')
-            ->useRoutes(); // Only routes, no other features
-    }
-}
-
-class SliceDirectoryValidationTest extends SliceServiceProvider
-{
-    public function configure(Slice $slice): void
-    {
-        $slice->setName('view-test')
-            ->useViews(); // Only views, no other features
-    }
-}
-
-class SliceDirectoryValidationTest extends SliceServiceProvider
-{
-    public function configure(Slice $slice): void
-    {
-        $slice->setName('translation-test')
-            ->useTranslations(); // Only translations, no other features
-    }
-}
-
-class SliceDirectoryValidationTest extends SliceServiceProvider
-{
-    public function configure(Slice $slice): void
-    {
-        $slice->setName('migration-test')
-            ->useMigrations(); // Only migrations, no other features
-    }
-}
-
 class SliceDirectoryValidationTest extends TestCase
 {
+    private function createRouteTestProvider(): SliceServiceProvider
+    {
+        return new class($this->app) extends SliceServiceProvider {
+            public function configure(Slice $slice): void
+            {
+                $slice->setName('route-test')
+                    ->useRoutes();
+            }
+        };
+    }
+
+    private function createViewTestProvider(): SliceServiceProvider
+    {
+        return new class($this->app) extends SliceServiceProvider {
+            public function configure(Slice $slice): void
+            {
+                $slice->setName('view-test')
+                    ->useViews();
+            }
+        };
+    }
+
+    private function createTranslationTestProvider(): SliceServiceProvider
+    {
+        return new class($this->app) extends SliceServiceProvider {
+            public function configure(Slice $slice): void
+            {
+                $slice->setName('translation-test')
+                    ->useTranslations();
+            }
+        };
+    }
+
+    private function createMigrationTestProvider(): SliceServiceProvider
+    {
+        return new class($this->app) extends SliceServiceProvider {
+            public function configure(Slice $slice): void
+            {
+                $slice->setName('migration-test')
+                    ->useMigrations();
+            }
+        };
+    }
+
     #[Test]
     public function it_throws_exception_when_routes_directory_missing(): void
     {
         $this->expectException(SliceNotRegistered::class);
         $this->expectExceptionMessage('Routes directory');
 
-        $provider = new RouteTestSliceServiceProvider($this->app);
+        $provider = $this->createRouteTestProvider();
         $provider->register();
         $provider->boot(); // Should throw exception because routes directory doesn't exist
     }
@@ -64,7 +72,7 @@ class SliceDirectoryValidationTest extends TestCase
         $this->expectException(SliceNotRegistered::class);
         $this->expectExceptionMessage('Views directory');
 
-        $provider = new ViewTestSliceServiceProvider($this->app);
+        $provider = $this->createViewTestProvider();
         $provider->register();
         $provider->boot(); // Should throw exception because views directory doesn't exist
     }
@@ -75,7 +83,7 @@ class SliceDirectoryValidationTest extends TestCase
         $this->expectException(SliceNotRegistered::class);
         $this->expectExceptionMessage('Translation directory');
 
-        $provider = new TranslationTestSliceServiceProvider($this->app);
+        $provider = $this->createTranslationTestProvider();
         $provider->register();
         $provider->boot(); // Should throw exception because translation directory doesn't exist
     }
@@ -86,7 +94,7 @@ class SliceDirectoryValidationTest extends TestCase
         $this->expectException(SliceNotRegistered::class);
         $this->expectExceptionMessage('Migration directory');
 
-        $provider = new MigrationTestSliceServiceProvider($this->app);
+        $provider = $this->createMigrationTestProvider();
         $provider->register();
         $provider->boot(); // Should throw exception because migration directory doesn't exist
     }

@@ -23,7 +23,7 @@ class SliceNotRegisteredTest extends TestCase
     {
         $exception = SliceNotRegistered::becauseNameIsNotDefined();
 
-        $expectedMessage = 'This slice does not have a name.' .
+        $expectedMessage = 'This slice does not have a name. ' .
             'You can set one with `$slice->setName("slice-name")`';
 
         $this->assertSame($expectedMessage, $exception->getMessage());

@@ -26,7 +26,7 @@ class MockBasedSliceTest extends TestCase
         $this->app->instance(Filesystem::class, $mockFilesystem);
 
         // Create a test feature
-        $testFeature = new class MockBasedSliceTest Feature {
+        $testFeature = new class implements Feature {
             public bool $registered = false;
             public function register(Slice $slice): void {
                 $this->registered = true;
@@ -136,7 +136,7 @@ class MockBasedSliceTest extends TestCase
         $slice = new Slice();
 
         // Test feature that doesn't require directories
-        $mockFeature = new class MockBasedSliceTest Feature {
+        $mockFeature = new class implements Feature {
             public array $calls = [];
 
             public function register(Slice $slice): void {

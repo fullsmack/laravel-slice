@@ -14,7 +14,7 @@ class CompleteSliceIntegrationTest extends TestCase
     #[Test]
     public function it_can_register_a_complete_slice_with_all_features(): void
     {
-        $feature1 = new class CompleteSliceIntegrationTest Feature {
+        $feature1 = new class implements Feature {
             public bool $registered = false;
 
             public function register(Slice $slice): void
@@ -23,7 +23,7 @@ class CompleteSliceIntegrationTest extends TestCase
             }
         };
 
-        $feature2 = new class CompleteSliceIntegrationTest Feature {
+        $feature2 = new class implements Feature {
             public bool $registered = false;
 
             public function register(Slice $slice): void
