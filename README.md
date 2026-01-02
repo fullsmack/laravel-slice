@@ -97,18 +97,24 @@ public function sliceBooted(): void
 
 Models must use the `UsesConnection` trait for `bindModelsToConnection()` to work.
 
-### Writing Migrations with a Connection
+### Writing Migrations
 
-Use the `MigrationConnection` trait in migrations that target a specific connection:
+Create a migration for a slice:
+
+```bash
+php artisan make:migration create_recipes_table --create=recipes --slice=pizza
+```
+
+This generates a migration in the slice's `database/migrations` directory with the `SliceMigration` trait. If the slice uses a connection, the `$connection` property is automatically added:
 
 ```php
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use FullSmack\LaravelSlice\Database\MigrationConnection;
+use FullSmack\LaravelSlice\Database\SliceMigration;
 
 return new class extends Migration
 {
-    use MigrationConnection;
+    use SliceMigration;
 
     protected $connection = 'cookbook';
 
@@ -130,7 +136,23 @@ return new class extends Migration
 };
 ```
 
-The `schema()` method returns a schema builder for the migration's connection.
+For slices without a connection, the migration uses the app default:
+
+```php
+return new class extends Migration
+{
+    use SliceMigration;
+
+    public function up(): void
+    {
+        $this->schema()->create('recipes', function (Blueprint $table) {
+            // ...
+        });
+    }
+};
+```
+
+The `schema()` method returns a schema builder for the migration's connection (or default if none).
 
 ### Running Slice Migrations
 
