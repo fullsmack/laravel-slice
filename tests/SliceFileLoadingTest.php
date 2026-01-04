@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Route;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceServiceProvider;
+use FullSmack\LaravelSlice\SliceNotRegistered;
 
 class SliceFileLoadingTest extends TestCase
 {
@@ -19,16 +20,19 @@ class SliceFileLoadingTest extends TestCase
     {
         parent::setUp();
 
-        // Create a proper slice directory structure
-        // tempSliceDir/
-        //   ├── src/           <- This will be the slice base path
-        //   ├── routes/        <- Routes directory
-        //   ├── config/        <- Config directory
-        //   ├── resources/
-        //   │   └── views/     <- Views directory
-        //   ├── lang/          <- Translations directory
-        //   └── database/
-        //       └── migrations/ <- Migrations directory
+        /* Creates a proper slice directory structure */
+        /*
+            tempSliceDir/
+               ├── config/            <- Config directory
+               ├── database/
+               │   └── migrations/    <- Migrations directory
+               ├── lang/              <- Translations directory
+               ├── resources/
+               │   └── views/         <- Views directory
+               ├── routes/            <- Routes directory
+               ├── src/               <- This will be the slice base path
+               └── tests/             <- Tests directory
+        */
 
         $this->tempSliceDir = sys_get_temp_dir() . '/test-slice-' . uniqid();
         File::makeDirectory($this->tempSliceDir, 0755, true);
@@ -80,7 +84,7 @@ class SliceFileLoadingTest extends TestCase
     #[Test]
     public function it_throws_exception_when_routes_directory_missing(): void
     {
-        $this->expectException(\FullSmack\LaravelSlice\SliceNotRegistered::class);
+        $this->expectException(SliceNotRegistered::class);
         $this->expectExceptionMessage('Routes directory');
 
         $provider = $this->createProviderWithTempPath(function($slice) {
@@ -192,7 +196,8 @@ class SliceFileLoadingTest extends TestCase
             {
                 $slice->setName('file-test');
 
-                if ($this->configureCallback) {
+                if ($this->configureCallback)
+                {
                     ($this->configureCallback)($slice);
                 }
             }

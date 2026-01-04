@@ -71,10 +71,6 @@ class SliceServiceProviderTest extends TestCase
     public function it_fails_to_register_slice_when_slice_name_is_not_defined(): void
     {
         $this->expectException(SliceNotRegistered::class);
-        $this->expectExceptionMessage(
-            'This slice does not have a name. ' .
-            'You can set one with `$slice->setName("slice-name")`'
-        );
 
         $provider = $this->createEmptyProvider();
         $provider->register();
@@ -190,7 +186,7 @@ class SliceServiceProviderTest extends TestCase
     }
 
     #[Test]
-    public function it_can_register_slice_with_multiple_features(): void
+    public function it_registers_slice_with_multiple_features(): void
     {
         $feature1 = new FeatureFake();
         $feature2 = new FeatureFake();

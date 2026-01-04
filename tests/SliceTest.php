@@ -25,7 +25,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_set_and_get_name(): void
+    public function it_sets_and_gets_name(): void
     {
         $result = $this->slice->setName('test-slice');
 
@@ -34,7 +34,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_enable_routes(): void
+    public function it_enables_routes(): void
     {
         $this->assertFalse($this->slice->hasRoutes());
 
@@ -45,7 +45,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_enable_translations(): void
+    public function it_enables_translations(): void
     {
         $this->assertFalse($this->slice->hasTranslations());
 
@@ -56,7 +56,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_enable_views(): void
+    public function it_enables_views(): void
     {
         $this->assertFalse($this->slice->hasViews());
 
@@ -67,7 +67,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_enable_migrations(): void
+    public function it_enables_migrations(): void
     {
         $this->assertFalse($this->slice->hasMigrations());
 
@@ -78,7 +78,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_add_features(): void
+    public function it_adds_features(): void
     {
         $feature = new FeatureFake();
 
@@ -92,7 +92,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_add_multiple_features(): void
+    public function it_adds_multiple_features(): void
     {
         $feature1 = new FeatureFake();
         $feature2 = new FeatureFake();
@@ -107,7 +107,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_set_and_get_base_path(): void
+    public function it_sets_and_gets_base_path(): void
     {
         $path = '/path/to/slice';
 
@@ -118,7 +118,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_get_base_path_with_directory(): void
+    public function it_gets_base_path_with_directory(): void
     {
         $basePath = '/path/to/slice';
         $this->slice->setBasePath($basePath);
@@ -146,7 +146,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_set_and_get_base_namespace(): void
+    public function it_sets_and_gets_base_namespace(): void
     {
         $namespace = 'Module\\TestSlice';
 
@@ -157,7 +157,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_get_base_namespace_with_subnamespace(): void
+    public function it_gets_base_namespace_with_subnamespace(): void
     {
         $baseNamespace = 'Module\\TestSlice';
         $this->slice->setBaseNamespace($baseNamespace);
@@ -195,7 +195,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_register_slice_to_static_registry(): void
+    public function it_registers_slice_to_static_registry(): void
     {
         $this->slice->setName('registry-test');
 
@@ -206,7 +206,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_get_all_registered_slices(): void
+    public function it_gets_all_registered_slices(): void
     {
         $slice1 = (new Slice())->setName('slice-one');
         $slice2 = (new Slice())->setName('slice-two');
@@ -230,7 +230,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_clear_registry(): void
+    public function it_clears_registry(): void
     {
         $this->slice->setName('to-clear');
         Slice::register($this->slice);
@@ -244,7 +244,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_enable_connection(): void
+    public function it_enables_connection(): void
     {
         $this->assertFalse($this->slice->usesConnection());
 
@@ -256,7 +256,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_enable_connection_without_explicit_name(): void
+    public function it_enables_connection_without_explicit_name(): void
     {
         $this->slice->setName('test-slice');
 
@@ -269,7 +269,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_register_commands(): void
+    public function it_registers_commands(): void
     {
         $this->assertEmpty($this->slice->commands());
 
@@ -280,7 +280,7 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_can_get_migration_path(): void
+    public function it_gets_migration_path(): void
     {
         $this->slice->setBasePath('/app/slices/my-slice/src');
 

@@ -11,7 +11,7 @@ use FullSmack\LaravelSlice\Slice;
 class FeatureTest extends TestCase
 {
     #[Test]
-    public function it_can_be_implemented(): void
+    public function it_registers_a_feature(): void
     {
         $feature = new class implements Feature {
             public bool $registerCalled = false;

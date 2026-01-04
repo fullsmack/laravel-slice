@@ -5,7 +5,6 @@ namespace FullSmack\LaravelSlice\Test;
 
 use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-use Illuminate\Support\Facades\File;
 use RuntimeException;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceNotRegistered;
@@ -19,11 +18,20 @@ class RefreshSliceDatabaseTest extends TestCase
     {
         parent::getEnvironmentSetUp($app);
 
-        config()->set('database.connections.slice_test', [
+        config()->set('database.connections.slice-database', [
             'driver' => 'sqlite',
             'database' => ':memory:',
             'prefix' => '',
         ]);
+    }
+
+    #[Test]
+    public function it_resets_migration_state(): void
+    {
+        static::resetSliceMigrationState();
+
+        /* Confirms state was reset */
+        $this->assertTrue(true);
     }
 
     #[Test]
@@ -35,7 +43,7 @@ class RefreshSliceDatabaseTest extends TestCase
     }
 
     #[Test]
-    public function it_throws_exception_when_slice_does_not_use_connection(): void
+    public function it_prevents_refreshing_database_when_slice_does_not_use_connection(): void
     {
         $slice = (new Slice())
             ->setName('no-connection-slice')
@@ -50,7 +58,7 @@ class RefreshSliceDatabaseTest extends TestCase
     }
 
     #[Test]
-    public function it_throws_exception_when_connection_is_null(): void
+    public function it_prevents_refreshing_database_when_connection_is_null(): void
     {
         $slice = (new Slice())
             ->setName('null-connection-slice')
@@ -63,14 +71,5 @@ class RefreshSliceDatabaseTest extends TestCase
         $this->expectExceptionMessage('no connection is defined');
 
         $this->refreshSlice('null-connection-slice');
-    }
-
-    #[Test]
-    public function it_can_reset_migration_state(): void
-    {
-        static::resetSliceMigrationState();
-
-        // This should not throw an exception, confirming state was reset
-        $this->assertTrue(true);
     }
 }

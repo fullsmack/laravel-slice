@@ -7,7 +7,7 @@ use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use FullSmack\LaravelSlice\LaravelSliceServiceProvider;
 
-class LaravelSliceServiceProviderTest extends TestCase
+final class LaravelSliceServiceProviderTest extends TestCase
 {
     #[Test]
     public function it_merges_package_config(): void
