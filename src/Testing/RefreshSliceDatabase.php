@@ -4,11 +4,13 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice\Testing;
 
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
+/** @phpstan-ignore trait.unused (trait is meant to be used by package consumers in their tests) */
 trait RefreshSliceDatabase
 {
     /** @var array<string, bool> */
@@ -29,12 +31,12 @@ trait RefreshSliceDatabase
 
     protected function refreshSingleSlice(string $sliceName): void
     {
-        if (!Slice::has($sliceName))
+        if (!SliceRegistry::has($sliceName))
         {
-            throw SliceNotRegistered::becauseSliceIsNotRegistered($sliceName);
+            throw SliceNotRegistered::becauseSliceIsNotAddedToRegistry($sliceName);
         }
 
-        $slice = Slice::get($sliceName);
+        $slice = SliceRegistry::get($sliceName);
 
         if (!$slice->usesConnection())
         {

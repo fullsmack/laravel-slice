@@ -1,4 +1,6 @@
 <?php
+declare(strict_types=1);
+
 namespace FullSmack\LaravelSlice\Command;
 
 use Illuminate\Database\Console\Migrations\MigrateCommand;
@@ -9,6 +11,9 @@ class MigrateSlice extends MigrateCommand
 {
     use SliceDefinitions;
 
+    /**
+     * @var string
+     */
     protected $signature = 'migrate
                         {--database= : The database connection to use}
                         {--force : Force the operation to run when in production}
@@ -21,34 +26,34 @@ class MigrateSlice extends MigrateCommand
                         {--step : Force the migrations to be run so they can be rolled back individually}
                         {--slice= : Run migrations for a specific slice}';
 
+    /**
+     * @var string
+     */
     protected $description = 'Run the database migrations';
 
+    /**
+     * @return int
+     */
     public function handle()
     {
         $this->defineSliceUsingOption();
 
-        if (!$this->createInSlice())
+        if (!$this->runInSlice())
         {
             return parent::handle();
         }
 
-        // Check if slice uses connection-based migrations
-        if (!$this->sliceUsesConnection())
-        {
-            $this->error("Slice '{$this->sliceName}' is not configured to use a separate connection. Use regular 'php artisan migrate' instead.");
-            return 1;
-        }
-
-        // Validate conflicting options when --slice is specified
+        // Validate --path option cannot be used with --slice (path is determined automatically)
         if ($this->option('path'))
         {
             $this->error('The --path option cannot be used with --slice. The slice path is determined automatically.');
             return 1;
         }
 
-        if ($this->option('database'))
+        // If slice has its own connection, don't allow --database override
+        if ($this->sliceUsesConnection() && $this->option('database'))
         {
-            $this->error('The --database option cannot be used with --slice. The database connection is determined from slice configuration.');
+            $this->error('The --database option cannot be used with --slice when the slice has a configured connection.');
             return 1;
         }
 
@@ -75,9 +80,10 @@ class MigrateSlice extends MigrateCommand
             return 0;
         }
 
-        $connection = $this->getSliceConnection();
+        // Use slice connection if configured, otherwise allow --database or default
+        $connection = $this->sliceUsesConnection() ? $this->getSliceConnection() : $this->option('database');
 
-        if (!$connection)
+        if ($this->sliceUsesConnection() && !$connection)
         {
             $this->error("Slice '{$this->sliceName}' is configured to use a connection but no connection is defined. Use ->useConnection('connection-name') when configuring the slice.");
             return 1;

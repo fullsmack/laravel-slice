@@ -6,6 +6,7 @@ namespace FullSmack\LaravelSlice\Database;
 use Illuminate\Database\Schema\Builder;
 use Illuminate\Support\Facades\Schema;
 
+/** @phpstan-ignore trait.unused (trait is meant to be used by package consumers) */
 trait SliceMigration
 {
     protected function schema(): Builder

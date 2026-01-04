@@ -14,31 +14,22 @@ class MakeSlice extends Command
     use SliceDefinitions;
 
     /**
-     * The name and signature of the console command.
-     *
      * @var string
      */
     protected $signature = 'make:slice {sliceName}';
 
     /**
-     * The console command description.
-     *
      * @var string
      */
     protected $description = 'Create a new slice';
 
-    /**
-     * Create a new command instance.
-     */
     public function __construct()
     {
         parent::__construct();
     }
 
     /**
-     * Execute the console command.
-     *
-     * @return void
+     * @return int
      */
     public function handle()
     {
@@ -47,7 +38,8 @@ class MakeSlice extends Command
         if(File::exists($this->slicePath))
         {
             $this->error("Slice with name \"{$this->sliceName}\" already exists");
-            return;
+
+            return Command::FAILURE;
         }
 
         $directories = [
@@ -84,9 +76,11 @@ class MakeSlice extends Command
         $this->runComposerDumpAutoload();
 
         $this->info("Slice \"{$this->sliceName}\" created successfully.");
+
+        return Command::SUCCESS;
     }
 
-    private function updateComposerJson()
+    private function updateComposerJson(): void
     {
         $composerFile = base_path('composer.json');
         $composerData = File::json($composerFile);
@@ -130,7 +124,7 @@ class MakeSlice extends Command
         file_put_contents($composerFile, json_encode($composerData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
-    protected function runComposerDumpAutoload()
+    protected function runComposerDumpAutoload(): void
     {
         $process = new \Symfony\Component\Process\Process(['composer', 'dump-autoload']);
         $process->setWorkingDirectory(base_path());

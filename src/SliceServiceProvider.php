@@ -12,11 +12,14 @@ use Symfony\Component\Finder\SplFileInfo;
 use Illuminate\Database\Eloquent\Model;
 
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\Feature;
 
 abstract class SliceServiceProvider extends ServiceProvider
 {
     protected Slice $slice;
+
+    /** @var ReflectionClass<static> */
     private ReflectionClass $reflector;
     private Filesystem $filesystem;
 
@@ -28,7 +31,7 @@ abstract class SliceServiceProvider extends ServiceProvider
     }
 
     /**
-     * @return static
+     * @return void
      */
     public function register()
     {
@@ -51,13 +54,14 @@ abstract class SliceServiceProvider extends ServiceProvider
             throw SliceNotRegistered::becauseNameIsNotDefined();
         }
 
-        Slice::register($this->slice);
+        SliceRegistry::register($this->slice);
 
         $this->sliceRegistered();
-
-        return $this;
     }
 
+    /**
+     * @return void
+     */
     public function boot()
     {
         $this->bootingSlice();
@@ -97,8 +101,6 @@ abstract class SliceServiceProvider extends ServiceProvider
         }
 
         $this->sliceBooted();
-
-        return $this;
     }
 
     protected function registerConfig(): void
@@ -129,6 +131,11 @@ abstract class SliceServiceProvider extends ServiceProvider
     {
         $routesDirectory = $this->slice->basePath('/../routes');
 
+        if (!$this->filesystem->isDirectory($routesDirectory))
+        {
+            throw SliceNotRegistered::becauseRouteDirectoryDoesntExist($routesDirectory);
+        }
+
         $routeFiles = $this->directoryFiles($routesDirectory);
 
         $routeFiles->each(function($routeFile) use($routesDirectory): void {
@@ -140,18 +147,30 @@ abstract class SliceServiceProvider extends ServiceProvider
     {
         $slicePath = $this->slice->basePath('/..');
 
-        $hasLangDir = is_dir($slicePath .'/lang');
+        $hasLanguageDir = is_dir($slicePath .'/lang');
 
-        $langPath = $slicePath . ($hasLangDir ? '/lang' : '/resources/lang');
+        $languagePath = $hasLanguageDir ? '/lang' : '/resources/lang';
 
-        $this->loadTranslationsFrom($langPath, $this->slice->name());
+        $languageDirectory = $this->slice->basePath('/..'. $languagePath);
 
-        $this->loadJsonTranslationsFrom($langPath, $this->slice->name());
+        if (!$this->filesystem->isDirectory($languageDirectory))
+        {
+            throw SliceNotRegistered::becauseTranslationDirectoryDoesntExist($languageDirectory);
+        }
+
+        $this->loadTranslationsFrom($languageDirectory, $this->slice->name());
+
+        $this->loadJsonTranslationsFrom($languageDirectory);
     }
 
     protected function registerViews(): void
     {
         $viewDirectory = $this->slice->basePath('/../resources/views');
+
+        if (!$this->filesystem->isDirectory($viewDirectory))
+        {
+            throw SliceNotRegistered::becauseViewDirectoryDoesntExist($viewDirectory);
+        }
 
         $viewPaths = [
             $viewDirectory,
@@ -163,6 +182,11 @@ abstract class SliceServiceProvider extends ServiceProvider
     protected function registerMigrations(): void
     {
         $migrationDirectory = $this->slice->basePath('/../database/migrations');
+
+        if (!$this->filesystem->isDirectory($migrationDirectory))
+        {
+            throw SliceNotRegistered::becauseMigrationDirectoryDoesntExist($migrationDirectory);
+        }
 
         $this->loadMigrationsFrom($migrationDirectory);
     }
@@ -184,12 +208,20 @@ abstract class SliceServiceProvider extends ServiceProvider
      */
     private function directoryFiles(string $path): Collection
     {
+        if (!$this->filesystem->isDirectory($path))
+        {
+            return collect();
+        }
+
         return Collection::make($this->filesystem->files($path.'/'))
             ->map(
                 static fn(SplFileInfo $file): string => $file->getRelativePathname()
             );
     }
 
+    /**
+     * @return ReflectionClass<static>
+     */
     protected function getReflector(): ReflectionClass
     {
         return new ReflectionClass($this::class);

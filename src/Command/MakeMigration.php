@@ -3,9 +3,9 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Command;
 
-use FullSmack\LaravelSlice\Slice;
 use Illuminate\Database\Console\Migrations\MigrateMakeCommand;
 use Illuminate\Support\Str;
+use FullSmack\LaravelSlice\SliceRegistry;
 
 class MakeMigration extends MigrateMakeCommand
 {
@@ -17,27 +17,28 @@ class MakeMigration extends MigrateMakeCommand
         {--fullpath : Output the full path of the migration (Deprecated)}
         {--slice= : The slice that the migration belongs to}';
 
+    /**
+     * @return void
+     */
     public function handle()
     {
         $sliceName = $this->option('slice');
 
         if (!$sliceName)
         {
-            return parent::handle();
+            parent::handle();
+
+            return;
         }
 
+        $sliceName = Str::kebab($sliceName);
         $config = config('laravel-slice');
         $sliceRootFolder = Str::lower($config['root']['folder']);
 
-        $sliceName = Str::kebab($sliceName);
-
         $path = "{$sliceRootFolder}/{$sliceName}/database/migrations";
-
         $this->input->setOption('path', $path);
 
         $connection = $this->resolveSliceConnection($sliceName);
-
-        $this->creator->stubPath(__DIR__ . '/../../stubs');
 
         $name = Str::snake(trim($this->input->getArgument('name')));
 
@@ -48,12 +49,12 @@ class MakeMigration extends MigrateMakeCommand
 
     protected function resolveSliceConnection(string $sliceName): ?string
     {
-        if (!Slice::has($sliceName))
+        if (!SliceRegistry::has($sliceName))
         {
             return null;
         }
 
-        $slice = Slice::get($sliceName);
+        $slice = SliceRegistry::get($sliceName);
 
         return $slice->usesConnection() ? $slice->connection() : null;
     }

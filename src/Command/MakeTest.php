@@ -12,20 +12,25 @@ class MakeTest extends TestMakeCommand
     use SliceDefinitions;
 
     /**
-     * The console command name.
-     *
      * @var string
      */
     protected $name = 'make:test';
 
+    /**
+     * @var string
+     */
     protected $signature = 'make:test {name} {--force} {--unit} {--pest} {--slice=}';
 
+    /**
+     * @return bool|null
+     */
     public function handle()
     {
         $this->defineSliceUsingOption();
 
-        parent::handle();
+        return parent::handle();
     }
+
     /**
      * Get the destination class path.
      *
@@ -45,6 +50,10 @@ class MakeTest extends TestMakeCommand
             str_replace('\\', '/', $name).'.php';
     }
 
+    /**
+     * @param string $rootNamespace
+     * @return string
+     */
     protected function getDefaultNamespace($rootNamespace)
     {
         return $rootNamespace;
@@ -68,9 +77,12 @@ class MakeTest extends TestMakeCommand
     }
 
     /**
-     * Get the console command options.
-     *
-     * @return array
+     * @return array<array{
+     *  0: string,
+     *  1: string,
+     *  2: int,
+     *  3: string,
+     * }>
      */
     protected function getOptions()
     {
