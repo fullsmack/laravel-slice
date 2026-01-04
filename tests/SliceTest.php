@@ -3,10 +3,11 @@ declare(strict_types=1);
 
 namespace Tests;
 
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use FullSmack\LaravelSlice\Slice;
-use FullSmack\LaravelSlice\Feature;
+use FullSmack\LaravelSlice\SliceNotRegistered;
+use Tests\Double\FeatureFake;
 
 final class SliceTest extends TestCase
 {
@@ -16,6 +17,11 @@ final class SliceTest extends TestCase
     {
         parent::setUp();
         $this->slice = new Slice();
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
     }
 
     #[Test]
@@ -74,7 +80,7 @@ final class SliceTest extends TestCase
     #[Test]
     public function it_can_add_features(): void
     {
-        $feature = $this->createMock(Feature::class);
+        $feature = new FeatureFake();
 
         $this->assertEmpty($this->slice->features());
 
@@ -88,8 +94,8 @@ final class SliceTest extends TestCase
     #[Test]
     public function it_can_add_multiple_features(): void
     {
-        $feature1 = $this->createMock(Feature::class);
-        $feature2 = $this->createMock(Feature::class);
+        $feature1 = new FeatureFake();
+        $feature2 = new FeatureFake();
 
         $this->slice
             ->withFeature($feature1)
@@ -165,7 +171,7 @@ final class SliceTest extends TestCase
     #[Test]
     public function it_supports_method_chaining(): void
     {
-        $feature = $this->createMock(Feature::class);
+        $feature = new FeatureFake();
 
         $result = $this->slice
             ->setName('test-slice')
@@ -186,5 +192,101 @@ final class SliceTest extends TestCase
         $this->assertTrue($this->slice->hasTranslations());
         $this->assertTrue($this->slice->hasMigrations());
         $this->assertCount(1, $this->slice->features());
+    }
+
+    #[Test]
+    public function it_can_register_slice_to_static_registry(): void
+    {
+        $this->slice->setName('registry-test');
+
+        Slice::register($this->slice);
+
+        $this->assertTrue(Slice::has('registry-test'));
+        $this->assertSame($this->slice, Slice::get('registry-test'));
+    }
+
+    #[Test]
+    public function it_can_get_all_registered_slices(): void
+    {
+        $slice1 = (new Slice())->setName('slice-one');
+        $slice2 = (new Slice())->setName('slice-two');
+
+        Slice::register($slice1);
+        Slice::register($slice2);
+
+        $all = Slice::all();
+
+        $this->assertCount(2, $all);
+        $this->assertArrayHasKey('slice-one', $all);
+        $this->assertArrayHasKey('slice-two', $all);
+    }
+
+    #[Test]
+    public function it_throws_exception_when_getting_unregistered_slice(): void
+    {
+        $this->expectException(SliceNotRegistered::class);
+
+        Slice::get('non-existent-slice');
+    }
+
+    #[Test]
+    public function it_can_clear_registry(): void
+    {
+        $this->slice->setName('to-clear');
+        Slice::register($this->slice);
+
+        $this->assertTrue(Slice::has('to-clear'));
+
+        Slice::clearRegistry();
+
+        $this->assertFalse(Slice::has('to-clear'));
+        $this->assertEmpty(Slice::all());
+    }
+
+    #[Test]
+    public function it_can_enable_connection(): void
+    {
+        $this->assertFalse($this->slice->usesConnection());
+
+        $result = $this->slice->useConnection('mysql');
+
+        $this->assertSame($this->slice, $result);
+        $this->assertTrue($this->slice->usesConnection());
+        $this->assertSame('mysql', $this->slice->connection());
+    }
+
+    #[Test]
+    public function it_can_enable_connection_without_explicit_name(): void
+    {
+        $this->slice->setName('test-slice');
+
+        $result = $this->slice->useConnection();
+
+        $this->assertSame($this->slice, $result);
+        $this->assertTrue($this->slice->usesConnection());
+        // Connection returns null when using config-based connection lookup and config doesn't exist
+        $this->assertNull($this->slice->connection());
+    }
+
+    #[Test]
+    public function it_can_register_commands(): void
+    {
+        $this->assertEmpty($this->slice->commands());
+
+        $result = $this->slice->withCommands(['App\\Commands\\TestCommand']);
+
+        $this->assertSame($this->slice, $result);
+        $this->assertCount(1, $this->slice->commands());
+    }
+
+    #[Test]
+    public function it_can_get_migration_path(): void
+    {
+        $this->slice->setBasePath('/app/slices/my-slice/src');
+
+        $migrationPath = $this->slice->migrationPath();
+
+        $this->assertStringContainsString('database', $migrationPath);
+        $this->assertStringContainsString('migrations', $migrationPath);
     }
 }

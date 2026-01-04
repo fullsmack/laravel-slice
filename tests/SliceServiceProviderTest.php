@@ -12,7 +12,7 @@ use Illuminate\Filesystem\Filesystem;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceServiceProvider;
 use FullSmack\LaravelSlice\SliceNotRegistered;
-use FullSmack\LaravelSlice\Feature;
+use Tests\Double\FeatureFake;
 
 class SliceServiceProviderTest extends TestCase
 {
@@ -38,24 +38,12 @@ class SliceServiceProviderTest extends TestCase
         };
     }
 
-    private function createMockFeature(): Feature
-    {
-        return new class implements Feature {
-            public bool $registered = false;
-
-            public function register(Slice $slice): void
-            {
-                $this->registered = true;
-            }
-        };
-    }
-
-    private function createProviderWithFeature(Feature $feature): SliceServiceProvider
+    private function createProviderWithFeature(FeatureFake $feature): SliceServiceProvider
     {
         return new class($this->app, $feature) extends SliceServiceProvider {
-            public Feature $feature;
+            public FeatureFake $feature;
 
-            public function __construct($app, Feature $feature)
+            public function __construct($app, FeatureFake $feature)
             {
                 parent::__construct($app);
                 $this->feature = $feature;
@@ -84,7 +72,7 @@ class SliceServiceProviderTest extends TestCase
     {
         $this->expectException(SliceNotRegistered::class);
         $this->expectExceptionMessage(
-            'This slice does not have a name.' .
+            'This slice does not have a name. ' .
             'You can set one with `$slice->setName("slice-name")`'
         );
 
@@ -106,7 +94,7 @@ class SliceServiceProviderTest extends TestCase
     #[Test]
     public function it_registers_features_when_booting(): void
     {
-        $feature = $this->createMockFeature();
+        $feature = new FeatureFake();
         $provider = $this->createProviderWithFeature($feature);
         $provider->register();
 
@@ -199,5 +187,56 @@ class SliceServiceProviderTest extends TestCase
             'bootingSlice',
             'sliceBooted'
         ], $this->hooksCalled);
+    }
+
+    #[Test]
+    public function it_can_register_slice_with_multiple_features(): void
+    {
+        $feature1 = new FeatureFake();
+        $feature2 = new FeatureFake();
+
+        $provider = new class($this->app, $feature1, $feature2) extends SliceServiceProvider {
+            private FeatureFake $feature1;
+            private FeatureFake $feature2;
+
+            public function __construct($app, FeatureFake $feature1, FeatureFake $feature2)
+            {
+                parent::__construct($app);
+                $this->feature1 = $feature1;
+                $this->feature2 = $feature2;
+            }
+
+            public function configure(Slice $slice): void
+            {
+                $slice->setName('multi-feature-slice')
+                    ->withFeature($this->feature1)
+                    ->withFeature($this->feature2);
+            }
+
+            public function getSlice(): Slice
+            {
+                return $this->slice;
+            }
+        };
+
+        $provider->register();
+        $provider->boot();
+
+        $slice = $provider->getSlice();
+
+        $this->assertSame('multi-feature-slice', $slice->name());
+        $this->assertCount(2, $slice->features());
+        $this->assertTrue($feature1->registered);
+        $this->assertTrue($feature2->registered);
+    }
+
+    #[Test]
+    public function it_adds_slice_to_registry_on_registration(): void
+    {
+        $provider = $this->createTestProvider();
+        $provider->register();
+
+        $this->assertTrue(Slice::has('test-slice'));
+        $this->assertInstanceOf(Slice::class, Slice::get('test-slice'));
     }
 }

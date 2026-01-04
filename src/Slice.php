@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 
 class Slice
 {
-    protected string $name;
+    protected string $name = '';
     protected string $basePath;
     protected string $baseNamespace;
 
