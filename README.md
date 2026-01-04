@@ -149,7 +149,7 @@ Implement the `Feature` interface:
 use FullSmack\LaravelSlice\Feature;
 use FullSmack\LaravelSlice\Slice;
 
-class CustomFeature implements Feature
+final class CustomFeature implements Feature
 {
     public function register(Slice $slice): void
     {
