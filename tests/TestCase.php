@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Tests;
+namespace FullSmack\LaravelSlice\Test;
 
 use Orchestra\Testbench\TestCase as Orchestra;
 use FullSmack\LaravelSlice\LaravelSliceServiceProvider;

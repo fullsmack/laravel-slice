@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Tests\Double;
+namespace FullSmack\LaravelSlice\Test\Double;
 
 use Illuminate\Database\Eloquent\Model;
 use FullSmack\LaravelSlice\Database\UsesConnection;

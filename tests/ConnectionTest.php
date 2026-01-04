@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Tests;
+namespace FullSmack\LaravelSlice\Test;
 
-use Tests\TestCase;
+use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use Illuminate\Support\Facades\Schema;
 use FullSmack\LaravelSlice\Slice;
-use Tests\Double\ModelFake;
-use Tests\Double\SliceServiceProviderFake;
+use FullSmack\LaravelSlice\Test\Double\ModelFake;
+use FullSmack\LaravelSlice\Test\Double\SliceServiceProviderFake;
 
 class ConnectionTest extends TestCase
 {

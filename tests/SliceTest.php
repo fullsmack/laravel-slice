@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-namespace Tests;
+namespace FullSmack\LaravelSlice\Test;
 
-use Tests\TestCase;
+use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceNotRegistered;
-use Tests\Double\FeatureFake;
+use FullSmack\LaravelSlice\Test\Double\FeatureFake;
 
 final class SliceTest extends TestCase
 {

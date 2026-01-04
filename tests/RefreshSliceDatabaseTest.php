@@ -1,9 +1,9 @@
 <?php
 declare(strict_types=1);
 
-namespace Tests;
+namespace FullSmack\LaravelSlice\Test;
 
-use Tests\TestCase;
+use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
