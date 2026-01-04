@@ -7,6 +7,7 @@ use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\Testing\RefreshSliceDatabase;
 
@@ -49,7 +50,7 @@ class RefreshSliceDatabaseTest extends TestCase
             ->setName('no-connection-slice')
             ->setBasePath(sys_get_temp_dir());
 
-        Slice::register($slice);
+        SliceRegistry::register($slice);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('does not use a separate connection');
@@ -65,7 +66,7 @@ class RefreshSliceDatabaseTest extends TestCase
             ->setBasePath(sys_get_temp_dir())
             ->useConnection(); // No explicit connection and no config
 
-        Slice::register($slice);
+        SliceRegistry::register($slice);
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('no connection is defined');

@@ -12,6 +12,7 @@ use Symfony\Component\Finder\SplFileInfo;
 use Illuminate\Database\Eloquent\Model;
 
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\Feature;
 
 abstract class SliceServiceProvider extends ServiceProvider
@@ -51,7 +52,7 @@ abstract class SliceServiceProvider extends ServiceProvider
             throw SliceNotRegistered::becauseNameIsNotDefined();
         }
 
-        Slice::register($this->slice);
+        SliceRegistry::register($this->slice);
 
         $this->sliceRegistered();
 

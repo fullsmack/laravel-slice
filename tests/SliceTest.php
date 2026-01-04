@@ -6,7 +6,6 @@ namespace FullSmack\LaravelSlice\Test;
 use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use FullSmack\LaravelSlice\Slice;
-use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\Test\Double\FeatureFake;
 
 final class SliceTest extends TestCase
@@ -192,55 +191,6 @@ final class SliceTest extends TestCase
         $this->assertTrue($this->slice->hasTranslations());
         $this->assertTrue($this->slice->hasMigrations());
         $this->assertCount(1, $this->slice->features());
-    }
-
-    #[Test]
-    public function it_registers_slice_to_static_registry(): void
-    {
-        $this->slice->setName('registry-test');
-
-        Slice::register($this->slice);
-
-        $this->assertTrue(Slice::has('registry-test'));
-        $this->assertSame($this->slice, Slice::get('registry-test'));
-    }
-
-    #[Test]
-    public function it_gets_all_registered_slices(): void
-    {
-        $slice1 = (new Slice())->setName('slice-one');
-        $slice2 = (new Slice())->setName('slice-two');
-
-        Slice::register($slice1);
-        Slice::register($slice2);
-
-        $all = Slice::all();
-
-        $this->assertCount(2, $all);
-        $this->assertArrayHasKey('slice-one', $all);
-        $this->assertArrayHasKey('slice-two', $all);
-    }
-
-    #[Test]
-    public function it_throws_exception_when_getting_unregistered_slice(): void
-    {
-        $this->expectException(SliceNotRegistered::class);
-
-        Slice::get('non-existent-slice');
-    }
-
-    #[Test]
-    public function it_clears_registry(): void
-    {
-        $this->slice->setName('to-clear');
-        Slice::register($this->slice);
-
-        $this->assertTrue(Slice::has('to-clear'));
-
-        Slice::clearRegistry();
-
-        $this->assertFalse(Slice::has('to-clear'));
-        $this->assertEmpty(Slice::all());
     }
 
     #[Test]

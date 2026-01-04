@@ -5,14 +5,14 @@ namespace FullSmack\LaravelSlice\Test;
 
 use Orchestra\Testbench\TestCase as Orchestra;
 use FullSmack\LaravelSlice\LaravelSliceServiceProvider;
-use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceRegistry;
 
 abstract class TestCase extends Orchestra
 {
     protected function setUp(): void
     {
         parent::setUp();
-        Slice::clearRegistry();
+        SliceRegistry::clear();
     }
 
     protected function getPackageProviders($app): array

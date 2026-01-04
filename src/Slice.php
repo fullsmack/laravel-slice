@@ -22,9 +22,6 @@ class Slice
     /** @var array<class-string<Command>> */
     private array $commands = [];
 
-    /** @var array<string, Slice> */
-    private static array $registry = [];
-
     /** @var array<Feature> */
     private array $features = [];
 
@@ -187,38 +184,5 @@ class Slice
     public function migrationPath(): string
     {
         return $this->basePath('/../database/migrations');
-    }
-
-    public static function register(Slice $slice): void
-    {
-        static::$registry[$slice->name()] = $slice;
-    }
-
-    public static function get(string $name): Slice
-    {
-        if (!isset(static::$registry[$name]))
-        {
-            throw SliceNotRegistered::becauseSliceIsNotAddedToRegistry($name);
-        }
-
-        return static::$registry[$name];
-    }
-
-    public static function has(string $name): bool
-    {
-        return isset(static::$registry[$name]);
-    }
-
-    /**
-     * @return array<string, Slice>
-     */
-    public static function all(): array
-    {
-        return static::$registry;
-    }
-
-    public static function clearRegistry(): void
-    {
-        static::$registry = [];
     }
 }

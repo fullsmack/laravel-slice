@@ -19,7 +19,7 @@ class SliceNotRegistered extends LogicException
     {
         return new static(
             "Slice '{$name}' is not added to registry. " .
-                'Make sure the slice service provider is loaded and calls `Slice::register(\$slice)` in sliceRegistered().'
+                'Make sure the slice service provider is loaded and registers the slice via SliceRegistry::register().'
         );
     }
 

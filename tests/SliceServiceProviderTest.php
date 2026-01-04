@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\View;
 use Illuminate\Filesystem\Filesystem;
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\SliceServiceProvider;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\Test\Double\FeatureFake;
@@ -232,7 +233,7 @@ class SliceServiceProviderTest extends TestCase
         $provider = $this->createTestProvider();
         $provider->register();
 
-        $this->assertTrue(Slice::has('test-slice'));
-        $this->assertInstanceOf(Slice::class, Slice::get('test-slice'));
+        $this->assertTrue(SliceRegistry::has('test-slice'));
+        $this->assertInstanceOf(Slice::class, SliceRegistry::get('test-slice'));
     }
 }
