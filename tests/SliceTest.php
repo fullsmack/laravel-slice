@@ -6,6 +6,7 @@ namespace FullSmack\LaravelSlice\Test;
 use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\Test\Double\CommandFake;
 use FullSmack\LaravelSlice\Test\Double\FeatureFake;
 
 final class SliceTest extends TestCase
@@ -16,11 +17,6 @@ final class SliceTest extends TestCase
     {
         parent::setUp();
         $this->slice = new Slice();
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
     }
 
     #[Test]
@@ -223,7 +219,7 @@ final class SliceTest extends TestCase
     {
         $this->assertEmpty($this->slice->commands());
 
-        $result = $this->slice->withCommands(['App\\Commands\\TestCommand']);
+        $result = $this->slice->withCommands([CommandFake::class]);
 
         $this->assertSame($this->slice, $result);
         $this->assertCount(1, $this->slice->commands());

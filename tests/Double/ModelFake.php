@@ -6,7 +6,7 @@ namespace FullSmack\LaravelSlice\Test\Double;
 use Illuminate\Database\Eloquent\Model;
 use FullSmack\LaravelSlice\Database\UsesConnection;
 
-class ModelFake extends Model
+final class ModelFake extends Model
 {
     use UsesConnection;
 

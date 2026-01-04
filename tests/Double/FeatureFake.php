@@ -6,7 +6,7 @@ namespace FullSmack\LaravelSlice\Test\Double;
 use FullSmack\LaravelSlice\Feature;
 use FullSmack\LaravelSlice\Slice;
 
-class FeatureFake implements Feature
+final class FeatureFake implements Feature
 {
     public bool $registered = false;
     public ?Slice $receivedSlice = null;

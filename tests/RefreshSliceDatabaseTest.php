@@ -32,6 +32,7 @@ final class RefreshSliceDatabaseTest extends TestCase
         static::resetSliceMigrationState();
 
         /* Confirms state was reset */
+        /** @phpstan-ignore method.alreadyNarrowedType */
         $this->assertTrue(true);
     }
 

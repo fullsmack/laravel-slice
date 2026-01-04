@@ -6,7 +6,7 @@ namespace FullSmack\LaravelSlice\Test\Double;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceServiceProvider;
 
-class SliceServiceProviderFake extends SliceServiceProvider
+final class SliceServiceProviderFake extends SliceServiceProvider
 {
     private string $sliceName;
     private ?string $connection = null;
@@ -19,6 +19,7 @@ class SliceServiceProviderFake extends SliceServiceProvider
     public function __construct($app, string $sliceName = 'fake-slice')
     {
         parent::__construct($app);
+
         $this->sliceName = $sliceName;
     }
 
@@ -26,11 +27,13 @@ class SliceServiceProviderFake extends SliceServiceProvider
     {
         $slice->setName($this->sliceName);
 
-        if ($this->useConnection) {
+        if ($this->useConnection)
+        {
             $slice->useConnection($this->connection);
         }
 
-        if ($this->basePath !== null) {
+        if ($this->basePath !== null)
+        {
             $slice->setBasePath($this->basePath);
         }
     }
@@ -57,15 +60,14 @@ class SliceServiceProviderFake extends SliceServiceProvider
         return $this;
     }
 
-    public function boot()
+    public function boot(): void
     {
         parent::boot();
 
-        if (!empty($this->modelClasses)) {
+        if (!empty($this->modelClasses))
+        {
             $this->bindModelsToConnection(...$this->modelClasses);
         }
-
-        return $this;
     }
 
     public function getSlice(): Slice

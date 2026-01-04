@@ -44,6 +44,7 @@ final class SliceServiceProviderTest extends TestCase
             public function __construct($app, FeatureFake $feature)
             {
                 parent::__construct($app);
+
                 $this->feature = $feature;
             }
 
@@ -139,8 +140,13 @@ final class SliceServiceProviderTest extends TestCase
         $hooksCalled = &$this->hooksCalled;
 
         $provider = new class($this->app, $hooksCalled) extends SliceServiceProvider {
+            /**
+             * @var array<string>
+             * @phpstan-ignore property.onlyWritten
+             */
             private array $hooksCalled;
 
+            /** @param array<string> $hooksCalled */
             public function __construct($app, array &$hooksCalled = [])
             {
                 parent::__construct($app);
@@ -217,7 +223,6 @@ final class SliceServiceProviderTest extends TestCase
         $provider->register();
         $provider->boot();
 
-        /* @phpstan-ignore-next-line */
         /** @disregard P1013 method is defined on anonymous class */
         $slice = $provider->getSlice();
 

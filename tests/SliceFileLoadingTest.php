@@ -78,6 +78,7 @@ final class SliceFileLoadingTest extends TestCase
         $provider->boot();
 
         // If we get here without exception, the route loading worked
+        /** @phpstan-ignore method.alreadyNarrowedType */
         $this->assertTrue(true);
     }
 
@@ -183,6 +184,7 @@ final class SliceFileLoadingTest extends TestCase
     {
         return new class($this->app, $this->tempSliceDir, $configureCallback) extends SliceServiceProvider {
             private string $tempPath;
+            /** @var callable|null */
             private $configureCallback;
 
             public function __construct($app, string $tempPath, callable $configureCallback = null)

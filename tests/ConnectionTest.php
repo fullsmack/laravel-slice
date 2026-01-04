@@ -8,7 +8,7 @@ use FullSmack\LaravelSlice\Test\TestCase;
 use FullSmack\LaravelSlice\Test\Double\ModelFake;
 use FullSmack\LaravelSlice\Test\Double\SliceServiceProviderFake;
 
-class ConnectionTest extends TestCase
+final class ConnectionTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -102,9 +102,9 @@ class ConnectionTest extends TestCase
         $migration = new class {
             use \FullSmack\LaravelSlice\Database\SliceMigration;
 
-            private ?string $connection = 'slice-database';
+            private string $connection = 'slice-database';
 
-            public function getConnection(): ?string
+            public function getConnection(): string
             {
                 return $this->connection;
             }
@@ -126,11 +126,10 @@ class ConnectionTest extends TestCase
         $migration = new class {
             use \FullSmack\LaravelSlice\Database\SliceMigration;
 
-            private ?string $connection = null;
-
+            /** @phpstan-ignore return.unusedType */
             public function getConnection(): ?string
             {
-                return $this->connection;
+                return null;
             }
 
             public function getSchemaBuilder(): \Illuminate\Database\Schema\Builder

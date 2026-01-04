@@ -32,7 +32,7 @@
         "test": "phpunit --testdox",
         "test-coverage": "phpunit --coverage-html coverage",
         "test-filter": "phpunit --filter",
-        "phpstan": "vendor/bin/phpstan analyse src/"
+        "phpstan": "vendor/bin/phpstan analyse"
 
     },
     "extra": {
