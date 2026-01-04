@@ -221,7 +221,16 @@ php artisan migrate --slice=pizza
 - `UsesConnection` trait: models can opt in to be bound to slice connections.
 - `SliceMigration` trait: migrations generated for slices will use the slice connection when present and provide a `schema()` helper bound to that connection.
 
-Short example (connection):
+Connection example:
+
+
+```php
+    $slice->setName('cookbook')
+        ->useMigrations()
+        ->withConnection('cookbook');
+```
+
+If you want to bind the models to the connection at the slice configuration level:
 
 ```php
     $slice->setName('cookbook')
@@ -232,19 +241,14 @@ Short example (connection):
         ]);
 ```
 
-Or without models:
-
-```php
-    $slice->setName('cookbook')
-        ->useMigrations()
-        ->withConnection('cookbook');
+**Testing**
 
 - Use `RefreshSliceDatabase` (testing helper) to run and refresh migrations for slice-specific connections and to wrap tests in transactions. Typical usage:
 
 ```php
 use FullSmack\LaravelSlice\Testing\RefreshSliceDatabase;
 
-class RecipeTest extends TestCase
+final class RecipeTest extends TestCase
 {
     use RefreshSliceDatabase;
 
