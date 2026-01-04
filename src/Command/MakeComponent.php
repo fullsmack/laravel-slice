@@ -20,6 +20,9 @@ class MakeComponent extends ComponentMakeCommand
      */
     protected $description = 'Create a new view component class in a slice';
 
+    /**
+     * @return void
+     */
     public function handle()
     {
         $this->defineSliceUsingOption();
@@ -35,7 +38,7 @@ class MakeComponent extends ComponentMakeCommand
      */
     protected function buildClass($name)
     {
-        if ($this->option('inline') || !$this->createInSlice())
+        if ($this->option('inline') || !$this->runInSlice())
         {
             parent::buildClass($name);
         }
@@ -50,7 +53,12 @@ class MakeComponent extends ComponentMakeCommand
     /**
      * Get the console command options.
      *
-     * @return array
+     * @return array<array{
+     *  0: string,
+     *  1: string|null,
+     *  2: int,
+     *  3: string,
+     * }>
      */
     protected function getOptions()
     {

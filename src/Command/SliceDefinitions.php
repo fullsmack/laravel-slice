@@ -3,9 +3,13 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Command;
 
-use FullSmack\LaravelSlice\Slice;
 use Illuminate\Support\Str;
+use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceRegistry;
 
+/**
+ * @phpstan-require-extends \Illuminate\Console\Command
+ */
 trait SliceDefinitions
 {
     private string $sliceName;
@@ -54,24 +58,24 @@ trait SliceDefinitions
         $this->sliceTestNamespace = Str::studly($config['test']['namespace']);
     }
 
-    private function createInSlice(): bool
+    private function runInSlice(): bool
     {
         return isset($this->sliceName) && $this->sliceName;
     }
 
     private function getRegisteredSlice(): ?Slice
     {
-        if (!$this->createInSlice())
+        if (!$this->runInSlice())
         {
             return null;
         }
 
-        if (!Slice::has($this->sliceName))
+        if (!SliceRegistry::has($this->sliceName))
         {
             return null;
         }
 
-        return Slice::get($this->sliceName);
+        return SliceRegistry::get($this->sliceName);
     }
 
     private function sliceUsesConnection(): bool
@@ -88,11 +92,18 @@ trait SliceDefinitions
         return $slice?->connection();
     }
 
+    /**
+     * @return string
+     */
     protected function rootNamespace()
     {
         return $this->sliceRootNamespace.'\\'.Str::studly($this->sliceName).'\\';
     }
 
+    /**
+     * @param string $name
+     * @return string
+     */
     protected function getPath($name)
     {
         $name = Str::replaceFirst($this->rootNamespace(), '', $name);
@@ -108,8 +119,9 @@ trait SliceDefinitions
      */
     protected function viewPath($path = '')
     {
-        if(!$this->createInSlice())
+        if(!$this->runInSlice())
         {
+            /** @phpstan-ignore staticMethod.notFound (viewPath exists in GeneratorCommand subclasses) */
             return parent::viewPath($path);
         }
 

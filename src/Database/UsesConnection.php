@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Database;
 
+/** @phpstan-ignore trait.unused (trait is meant to be used by package consumers) */
 trait UsesConnection
 {
     protected static ?string $sliceConnection = null;

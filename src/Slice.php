@@ -84,7 +84,7 @@ class Slice
     }
 
     /**
-     * @param array<class-string<Command>>
+     * @param array<class-string<Command>> $commands
      */
     public function withCommands(array $commands = []): static
     {

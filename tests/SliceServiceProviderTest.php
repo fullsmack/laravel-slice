@@ -63,9 +63,9 @@ class SliceServiceProviderTest extends TestCase
     {
         $provider = $this->createTestProvider();
 
-        $result = $provider->register();
+        $provider->register();
 
-        $this->assertSame($provider, $result);
+        $this->assertTrue(SliceRegistry::has('test-slice'));
     }
 
     #[Test]
@@ -83,9 +83,10 @@ class SliceServiceProviderTest extends TestCase
         $provider = $this->createTestProvider();
         $provider->register();
 
-        $result = $provider->boot();
+        $provider->boot();
 
-        $this->assertSame($provider, $result);
+
+        $this->assertTrue(SliceRegistry::has('test-slice'));
     }
 
     #[Test]
@@ -219,6 +220,8 @@ class SliceServiceProviderTest extends TestCase
         $provider->register();
         $provider->boot();
 
+        /* @phpstan-ignore-next-line */
+        /** @disregard P1013 method is defined on anonymous class */
         $slice = $provider->getSlice();
 
         $this->assertSame('multi-feature-slice', $slice->name());

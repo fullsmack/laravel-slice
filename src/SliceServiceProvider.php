@@ -18,6 +18,8 @@ use FullSmack\LaravelSlice\Feature;
 abstract class SliceServiceProvider extends ServiceProvider
 {
     protected Slice $slice;
+
+    /** @var ReflectionClass<static> */
     private ReflectionClass $reflector;
     private Filesystem $filesystem;
 
@@ -29,7 +31,7 @@ abstract class SliceServiceProvider extends ServiceProvider
     }
 
     /**
-     * @return static
+     * @return void
      */
     public function register()
     {
@@ -55,10 +57,11 @@ abstract class SliceServiceProvider extends ServiceProvider
         SliceRegistry::register($this->slice);
 
         $this->sliceRegistered();
-
-        return $this;
     }
 
+    /**
+     * @return void
+     */
     public function boot()
     {
         $this->bootingSlice();
@@ -98,8 +101,6 @@ abstract class SliceServiceProvider extends ServiceProvider
         }
 
         $this->sliceBooted();
-
-        return $this;
     }
 
     protected function registerConfig(): void
@@ -159,7 +160,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         $this->loadTranslationsFrom($languageDirectory, $this->slice->name());
 
-        $this->loadJsonTranslationsFrom($languageDirectory, $this->slice->name());
+        $this->loadJsonTranslationsFrom($languageDirectory);
     }
 
     protected function registerViews(): void
@@ -218,6 +219,9 @@ abstract class SliceServiceProvider extends ServiceProvider
             );
     }
 
+    /**
+     * @return ReflectionClass<static>
+     */
     protected function getReflector(): ReflectionClass
     {
         return new ReflectionClass($this::class);

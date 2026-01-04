@@ -10,6 +10,7 @@ use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
 
+/** @phpstan-ignore trait.unused (trait is meant to be used by package consumers in their tests) */
 trait RefreshSliceDatabase
 {
     /** @var array<string, bool> */

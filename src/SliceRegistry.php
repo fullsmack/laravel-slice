@@ -10,22 +10,22 @@ abstract class SliceRegistry
 
     public static function register(Slice $slice): void
     {
-        static::$registry[$slice->name()] = $slice;
+        self::$registry[$slice->name()] = $slice;
     }
 
     public static function get(string $name): Slice
     {
-        if (!isset(static::$registry[$name]))
+        if (!isset(self::$registry[$name]))
         {
             throw SliceNotRegistered::becauseSliceIsNotAddedToRegistry($name);
         }
 
-        return static::$registry[$name];
+        return self::$registry[$name];
     }
 
     public static function has(string $name): bool
     {
-        return isset(static::$registry[$name]);
+        return isset(self::$registry[$name]);
     }
 
     /**
@@ -33,11 +33,11 @@ abstract class SliceRegistry
      */
     public static function all(): array
     {
-        return static::$registry;
+        return self::$registry;
     }
 
     public static function clear(): void
     {
-        static::$registry = [];
+        self::$registry = [];
     }
 }

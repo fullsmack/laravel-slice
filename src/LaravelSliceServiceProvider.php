@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Console\Command;
 
 use FullSmack\LaravelSlice\Command\MakeSlice;
 use FullSmack\LaravelSlice\Command\MakeTest;
@@ -13,6 +14,7 @@ use FullSmack\LaravelSlice\Command\MigrateSlice;
 
 class LaravelSliceServiceProvider extends ServiceProvider
 {
+    /** @var array<class-string<Command>> */
     protected $commands = [
         MakeSlice::class,
         MakeTest::class,
@@ -22,8 +24,6 @@ class LaravelSliceServiceProvider extends ServiceProvider
     ];
 
     /**
-     * Bootstrap any application services.
-     *
      * @return void
      */
     public function boot()
@@ -36,8 +36,6 @@ class LaravelSliceServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register any application services.
-     *
      * @return void
      */
     public function register()
@@ -45,19 +43,18 @@ class LaravelSliceServiceProvider extends ServiceProvider
         //
     }
 
-    protected function registerConfig()
+    protected function registerConfig(): void
     {
         $this->mergeConfigFrom(__DIR__.'/../config/laravel-slice.php', 'laravel-slice');
     }
 
-    protected function publishesConfig()
+    protected function publishesConfig(): void
     {
         if ($this->app->runningInConsole())
         {
             $this->publishes([
                 __DIR__.'/../config/laravel-slice.php' => config_path('laravel-slice.php'),
             ], 'config');
-
         }
     }
 
