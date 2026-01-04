@@ -14,6 +14,39 @@ It can be used to structure modules, vertical slices, horizontal UI-slices, and 
 composer require fullsmack/laravel-slice
 ```
 
+**Project Structure**
+
+Laravel Slice expects your application to be organized with slices in a dedicated folder (by default `src/`). This works alongside Laravel's default `app/` folder:
+
+```
+your-project/
+├── app/                    # Default Laravel application code
+├── src/                    # Slice modules (configurable)
+│   ├── pizza/
+│   │   ├── config/
+│   │   ├── src/
+│   │   ├── routes/
+│   │   └── ...
+│   └── order/
+│       └── ...
+├── config/
+├── database/
+└── ...
+```
+
+**Configuration**
+
+The package can be configured by publishing the config file:
+
+```bash
+php artisan vendor:publish --provider="FullSmack\LaravelSlice\LaravelSliceServiceProvider" --tag="config"
+```
+
+This creates `config/laravel-slice.php` where you can customize:
+- `root.folder`: The folder name where slices are stored (default: `'src'`)
+- `root.namespace`: The root namespace for slices (default: `'slice'`)
+- Other architectural defaults
+
 **Quick Start**
 
 Make a slice by running the following command:
@@ -32,23 +65,26 @@ final class PizzaServiceProvider extends SliceServiceProvider
     public function configure(Slice $slice): void
     {
         $slice->setName('pizza')
-              ->useRoutes()
-              ->useViews()
-              ->useMigrations();
+            ->useRoutes()
+            ->useViews()
+            ->useMigrations();
     }
 }
 ```
 
 **Slice Anatomy**
 
-Typical slice layout inside a module:
+Slices are organized within your configured root folder (default: `src/`). Typical slice layout:
 
-- `config/` — slice config files (auto-registered under `slice-name::`)
-- `resources/views/` — blade views, referenced as `slice-name::view.name`
-- `lang/` — translation files, referenced as `slice-name::file.key`
-- `routes/` — slice route definitions
-- `database/migrations/` — slice-specific migrations
-- `src/` — PSR-4 classes for the slice
+```
+src/YourSliceName/
+├── config/                 # slice config files (auto-registered under `slice-name::`)
+├── resources/views/        # blade views, referenced as `slice-name::view.name`
+├── lang/                   # translation files, referenced as `slice-name::file.key`
+├── routes/                 # slice route definitions
+├── database/migrations/    # slice-specific migrations
+└── src/                    # PSR-4 classes for the slice
+```
 
 **Configuring a Slice**
 
@@ -60,11 +96,11 @@ Short example (minimal):
 ```php
 public function configure(Slice $slice): void
 {
-    $slice->setName('orders')
+    $slice->setName('order')
         ->useRoutes()
         ->useViews()
         ->withCommands([
-            \Module\Orders\Console\SyncOrders::class,
+            \Slice\Order\Console\SyncOrders::class,
         ]);
 }
 ```
@@ -113,9 +149,9 @@ php artisan migrate --slice=pizza
 Short example (connection):
 
 ```php
-$slice->setName('cookbook')
-      ->useMigrations()
-      ->useConnection('cookbook');
+    $slice->setName('cookbook')
+        ->useMigrations()
+        ->useConnection('cookbook');
 ```
 
 **Testing**

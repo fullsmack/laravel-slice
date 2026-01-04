@@ -193,7 +193,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     protected function registerFeatures(): void
     {
-        foreach($this->slice->features() as $feature)
+        foreach ($this->slice->features() as $feature)
         {
             if ($feature instanceof Feature)
             {
