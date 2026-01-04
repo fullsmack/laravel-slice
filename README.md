@@ -45,7 +45,40 @@ php artisan vendor:publish --provider="FullSmack\LaravelSlice\LaravelSliceServic
 This creates `config/laravel-slice.php` where you can customize:
 - `root.folder`: The folder name where slices are stored (default: `'src'`)
 - `root.namespace`: The root namespace for slices (default: `'slice'`)
-- Other architectural defaults
+- `discovery.type`: Service provider discovery method (default: `'composer'`)
+
+**Service Provider Registration**
+
+Slices can be auto-discovered or manually registered:
+
+### Auto-Discovery (Default)
+When `discovery.type` is set to `'composer'` (default), slice service providers are automatically registered in your `composer.json`:
+
+```json
+{
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Slice\\Pizza\\PizzaServiceProvider",
+                "Slice\\Order\\OrderServiceProvider"
+            ]
+        }
+    }
+}
+```
+
+The `make:slice` command automatically adds new slices to this list.
+
+### Manual Registration
+To disable auto-discovery, set `discovery.type` to any other value (e.g., `'manual'`). Then register slice service providers manually in your `config/app.php`:
+
+```php
+'providers' => [
+    // ... other providers
+    \Slice\Pizza\PizzaServiceProvider::class,
+    \Slice\Order\OrderServiceProvider::class,
+],
+```
 
 **Quick Start**
 
@@ -64,20 +97,17 @@ final class PizzaServiceProvider extends SliceServiceProvider
 {
     public function configure(Slice $slice): void
     {
-        $slice->setName('pizza')
-            ->useRoutes()
-            ->useViews()
-            ->useMigrations();
+        $slice->setName('pizza');
     }
 }
 ```
 
-**Slice Anatomy**
+**Slice Structure**
 
 Slices are organized within your configured root folder (default: `src/`). Typical slice layout:
 
 ```
-src/YourSliceName/
+src/your-slice-name/
 ├── config/                 # slice config files (auto-registered under `slice-name::`)
 ├── resources/views/        # blade views, referenced as `slice-name::view.name`
 ├── lang/                   # translation files, referenced as `slice-name::file.key`
@@ -97,11 +127,56 @@ Short example (minimal):
 public function configure(Slice $slice): void
 {
     $slice->setName('order')
-        ->useRoutes()
-        ->useViews()
-        ->withCommands([
+        ->useRoutes()          // Load routes from routes/
+        ->useViews()           // Load views from resources/views
+        ->useTranslations()    // Load translations from lang/
+        ->useMigrations()      // Load migrations from database/migrations
+        ->withCommands([       // Register command classes
             \Slice\Order\Console\SyncOrders::class,
-        ]);
+        ])
+}
+```
+
+**Custom Features**
+
+Features provide an extensibility mechanism for slices, allowing you to add custom functionality that integrates with the slice lifecycle. Features can be implemented by other packages or created directly in your application.
+
+### Creating a Feature
+
+Implement the `Feature` interface:
+
+```php
+use FullSmack\LaravelSlice\Feature;
+use FullSmack\LaravelSlice\Slice;
+
+class CustomFeature implements Feature
+{
+    public function register(Slice $slice): void
+    {
+        // Add custom functionality here
+        // Access to slice configuration, paths, etc.
+
+        // Example: Register Livewire or other frontend assets in your slice
+    }
+}
+```
+
+### Registering Features
+
+Add features to your slice configuration:
+
+```php
+use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceServiceProvider;
+
+final class OrderServiceProvider extends SliceServiceProvider
+{
+    public function configure(Slice $slice): void
+    {
+        $slice->setName('order')
+            ->withFeature(new CustomFeature())
+            ->withFeature(new AnotherFeature());
+    }
 }
 ```
 
@@ -136,7 +211,7 @@ php artisan make:migration create_recipes_table --create=recipes --slice=pizza
 php artisan migrate --slice=pizza
 ```
 
-**Migrations & Connections (secondary)**
+**Migrations & Connections**
 
 - Slices can optionally use a dedicated database connection. The slice works with the app default connection when no slice connection is configured.
 - `useConnection()` on `Slice` controls connection resolution. Resolution order:
@@ -151,7 +226,11 @@ Short example (connection):
 ```php
     $slice->setName('cookbook')
         ->useMigrations()
-        ->useConnection('cookbook');
+        ->useConnection('cookbook')
+        ->bindModelsToConnection([
+            Recipe::class,
+            Delivery::class,
+        ]);
 ```
 
 **Testing**
@@ -177,7 +256,7 @@ class RecipeTest extends TestCase
 
 - The namespace `slice-name::` is the canonical way to reference a slice's resources (config, views, translations).
 - Config files placed under a slice's `config/` directory are auto-registered and available via `config('slice::key')` — you don't need to call a registration helper in `configure()` to make them available.
-- Models with a dedicated connection must use `UsesConnection` for automatic connection binding via `bindModelsToConnection()`.
+- Models with a dedicated connection must use `UsesConnection` trait for automatic connection binding via `bindModelsToConnection()`.
 
 **Contributing**
 
