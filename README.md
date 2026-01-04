@@ -1,22 +1,29 @@
-# laravel-slice
+# Laravel Slice
 
-A Laravel package for organizing your application into modular slices — each with their own routes, views, migrations, and optionally separate database connections.
+Modular architecture for Laravel applications — organize your app into standalone "slices" that keep related code together (routes, views, translations, migrations, commands, config).
 
-## Installation
+It can be used to structure modules, vertical slices, horizontal UI-slices, and other standalone or portable features.
+
+**Overview**
+- Purpose: Provide a lightweight convention to compose self-contained modules (slices) with a consistent namespace and resource resolution.
+- Main idea: each slice registers a namespace `slice-name::` used for config, translations and views so everything related to the slice stays with the module.
+
+**Installation**
 
 ```bash
 composer require fullsmack/laravel-slice
 ```
 
-## Creating a Slice
+**Quick Start**
 
-Create a service provider that extends `SliceServiceProvider`:
+Make a slice by running the following command:
+```bash
+php artisan make:slice pizza
+```
+
+This scaffolds a slice with the full directory structure and adds a service provider to configure the slice. You need to make your own configurations in the service provider's `configure()` method:
 
 ```php
-<?php
-
-namespace Module\Pizza;
-
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceServiceProvider;
 
@@ -25,155 +32,100 @@ final class PizzaServiceProvider extends SliceServiceProvider
     public function configure(Slice $slice): void
     {
         $slice->setName('pizza')
-            ->useRoutes()
-            ->useViews()
-            ->useMigrations();
+              ->useRoutes()
+              ->useViews()
+              ->useMigrations();
     }
 }
 ```
 
-## Database Connections
+**Slice Anatomy**
 
-Slices can use a separate database connection for their models and migrations.
+Typical slice layout inside a module:
 
-### Configuring a Slice Connection
+- `config/` — slice config files (auto-registered under `slice-name::`)
+- `resources/views/` — blade views, referenced as `slice-name::view.name`
+- `lang/` — translation files, referenced as `slice-name::file.key`
+- `routes/` — slice route definitions
+- `database/migrations/` — slice-specific migrations
+- `src/` — PSR-4 classes for the slice
 
-Enable a separate connection when configuring your slice:
+**Configuring a Slice**
+
+- `Slice` is the configuration object you receive in `configure(Slice $slice)`.
+- Common fluent methods: `setName()`, `useViews()`, `useTranslations()`, `useMigrations()`, `useRoutes()`, `withCommands()`, `withFeature()`, `useConnection()`.
+
+Short example (minimal):
 
 ```php
 public function configure(Slice $slice): void
 {
-    $slice->setName('pizza')
-        ->useMigrations()
-        ->useConnection('cookbook'); // Explicit connection name
+    $slice->setName('orders')
+        ->useRoutes()
+        ->useViews()
+        ->withCommands([
+            \Module\Orders\Console\SyncOrders::class,
+        ]);
 }
 ```
 
-Or let the connection be resolved from config:
+**Namespacing & Resources**
+
+- Every slice registers a namespace `slice-name::` automatically. Use this namespace for config, translations and views:
 
 ```php
-public function configure(Slice $slice): void
-{
-    $slice->setName('pizza')
-          ->useMigrations()
-          ->useConnection(); // Reads from 'pizza::database.default' config
-}
+config('pizza::settings.default-timezone');
+trans('pizza::messages.order-created');
+view('pizza::emails.receipt');
 ```
 
-**Connection resolution order:**
-1. Explicit connection passed to `useConnection('connection-name')`
-2. Config value from `{sliceName}::database.default` (if `useConnection()` was called without a value)
-3. App default connection (if `useConnection()` was NOT called)
+- Config registration is automatic: you do not need to explicitly register slice config files inside `configure()` in order for `slice-name::` config resolution to work.
 
-### Binding Models to a Connection
+**Commands & Scaffolding**
 
-Models can define their connection directly:
+Available scaffold and slice commands (located under `src/Command`):
 
-```php
-use FullSmack\LaravelSlice\Database\UsesConnection;
+- `MakeSlice` — scaffold a new slice
+- `MakeComponent` — create a UI component inside a slice
+- `MakeMigration` — generate a slice migration (`--slice=NAME` flag)
+- `MakeTest` — scaffold slice tests
+- `MigrateSlice` — run migrations for a specific slice
+- `SliceDefinitions` — helpers for slice path/namespace logic in commands
 
-class Recipe extends Model
-{
-    use UsesConnection;
-
-    protected $connection = 'cookbook';
-}
-```
-
-Or bind multiple models to the slice's connection in your service provider:
-
-```php
-use Module\Pizza\Models\Recipe;
-use Module\Pizza\Models\Ingredient;
-
-public function sliceBooted(): void
-{
-    $this->bindModelsToConnection(
-        Recipe::class,
-        Ingredient::class,
-    );
-}
-```
-
-Models must use the `UsesConnection` trait for `bindModelsToConnection()` to work.
-
-### Writing Migrations
-
-Create a migration for a slice:
+Common usage examples:
 
 ```bash
+php artisan make:slice pizza
 php artisan make:migration create_recipes_table --create=recipes --slice=pizza
-```
-
-This generates a migration in the slice's `database/migrations` directory with the `SliceMigration` trait. If the slice uses a connection, the `$connection` property is automatically added:
-
-```php
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use FullSmack\LaravelSlice\Database\SliceMigration;
-
-return new class extends Migration
-{
-    use SliceMigration;
-
-    protected $connection = 'cookbook';
-
-    public function up(): void
-    {
-        $this->schema()->create('recipes', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->text('description')->nullable();
-            $table->integer('baking_minutes')->default(12);
-            $table->timestamps();
-        });
-    }
-
-    public function down(): void
-    {
-        $this->schema()->dropIfExists('recipes');
-    }
-};
-```
-
-For slices without a connection, the migration uses the app default:
-
-```php
-return new class extends Migration
-{
-    use SliceMigration;
-
-    public function up(): void
-    {
-        $this->schema()->create('recipes', function (Blueprint $table) {
-            // ...
-        });
-    }
-};
-```
-
-The `schema()` method returns a schema builder for the migration's connection (or default if none).
-
-### Running Slice Migrations
-
-Run migrations for a specific slice:
-
-```bash
 php artisan migrate --slice=pizza
 ```
 
-This automatically uses the slice's configured connection and migration path.
+**Migrations & Connections (secondary)**
 
-## Testing
+- Slices can optionally use a dedicated database connection. The slice works with the app default connection when no slice connection is configured.
+- `useConnection()` on `Slice` controls connection resolution. Resolution order:
+  1. Explicit argument passed to `useConnection('name')`
+ 2. Config value from `{sliceName}::database.default` when `useConnection()` is called without an argument
+ 3. Application default connection when `useConnection()` is not used
+- `UsesConnection` trait: models can opt in to be bound to slice connections.
+- `SliceMigration` trait: migrations generated for slices will use the slice connection when present and provide a `schema()` helper bound to that connection.
 
-### Refreshing Slice Databases in Tests
+Short example (connection):
 
-Use the `RefreshSliceDatabase` trait to refresh slice-specific database connections in your tests:
+```php
+$slice->setName('cookbook')
+      ->useMigrations()
+      ->useConnection('cookbook');
+```
+
+**Testing**
+
+- Use `RefreshSliceDatabase` (testing helper) to run and refresh migrations for slice-specific connections and to wrap tests in transactions. Typical usage:
 
 ```php
 use FullSmack\LaravelSlice\Testing\RefreshSliceDatabase;
 
-class PizzaTest extends TestCase
+class RecipeTest extends TestCase
 {
     use RefreshSliceDatabase;
 
@@ -182,36 +134,15 @@ class PizzaTest extends TestCase
         parent::setUp();
         $this->refreshSlice('pizza');
     }
-
-    public function it_can_create_a_margherita_recipe(): void
-    {
-        $recipe = Recipe::create([
-            'name' => 'Margherita',
-            'description' => 'Fresh tomatoes, mozzarella, and basil',
-        ]);
-
-        $this->assertDatabaseHas('recipes', ['name' => 'Margherita'], 'cookbook');
-    }
 }
 ```
 
-Refresh multiple slices at once:
+**Gotchas & Notes**
 
-```php
-$this->refreshSlice('pizza', 'orders');
-```
+- The namespace `slice-name::` is the canonical way to reference a slice's resources (config, views, translations).
+- Config files placed under a slice's `config/` directory are auto-registered and available via `config('slice::key')` — you don't need to call a registration helper in `configure()` to make them available.
+- Models with a dedicated connection must use `UsesConnection` for automatic connection binding via `bindModelsToConnection()`.
 
-The trait mirrors Laravel's `LazilyRefreshDatabase` approach:
-- Migrations run once per test run (tracked per connection)
-- Each test is wrapped in a transaction that gets rolled back
-- Tables are dropped and rebuilt on first run
+**Contributing**
 
-### Additional Test Methods
-
-```php
-// Manually rollback all slice transactions
-$this->rollbackSliceTransactions();
-
-// Reset migration state to force re-migration
-RefreshSliceDatabase::resetSliceMigrationState();
-```
+- See tests under [tests/](tests/) for examples of package integration and behavior.
