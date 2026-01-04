@@ -263,8 +263,8 @@ abstract class SliceServiceProvider extends ServiceProvider
      * Bind the slice's connection to configured model classes.
      *
      * This sets the default connection for all models configured via
-     * $slice->bindModelsToConnection() to use the connection defined
-     * via $slice->useConnection().
+     * $slice->withConnection() to use the connection defined
+     * via $slice->withConnection().
      *
      * Models must use the UsesConnection trait for this to work.
      */

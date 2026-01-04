@@ -71,8 +71,7 @@ final class ConnectionTest extends TestCase
     public function bind_models_to_connection_sets_connection_on_models(): void
     {
         $provider = (new SliceServiceProviderFake($this->app, 'model-binding-slice'))
-            ->withConnection('slice-database')
-            ->withModels(ModelFake::class);
+            ->withConnection('slice-database', [ModelFake::class]);
 
         $provider->register();
         $provider->boot();
@@ -86,13 +85,27 @@ final class ConnectionTest extends TestCase
     #[Test]
     public function it_doesnt_bind_models_to_connection_when_no_connection_defined(): void
     {
-        $provider = (new SliceServiceProviderFake($this->app, 'no-connection-slice'))
-            ->withModels(ModelFake::class);
+        $provider = new SliceServiceProviderFake($this->app, 'no-connection-slice');
 
         $provider->register();
         $provider->boot();
 
         $this->assertNull(ModelFake::getSliceConnection());
+    }
+
+    #[Test]
+    public function with_connection_with_models_array_sets_connection_on_models(): void
+    {
+        $provider = (new SliceServiceProviderFake($this->app, 'array-models-slice'))
+            ->withConnection('slice-database', [ModelFake::class]);
+
+        $provider->register();
+        $provider->boot();
+
+        $this->assertSame('slice-database', ModelFake::getSliceConnection());
+
+        $model = new ModelFake();
+        $this->assertSame('slice-database', $model->getConnectionName());
     }
 
     #[Test]

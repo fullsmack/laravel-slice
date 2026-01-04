@@ -119,7 +119,7 @@ src/your-slice-name/
 **Configuring a Slice**
 
 - `Slice` is the configuration object you receive in `configure(Slice $slice)`.
-- Common fluent methods: `setName()`, `useViews()`, `useTranslations()`, `useMigrations()`, `useRoutes()`, `withCommands()`, `withFeature()`, `useConnection()`, `bindModelsToConnection()`.
+- Common fluent methods: `setName()`, `useViews()`, `useTranslations()`, `useMigrations()`, `useRoutes()`, `withCommands()`, `withFeature()`, `withConnection()`.
 
 Short example (minimal):
 
@@ -214,10 +214,10 @@ php artisan migrate --slice=pizza
 **Migrations & Connections**
 
 - Slices can optionally use a dedicated database connection. The slice works with the app default connection when no slice connection is configured.
-- `useConnection()` on `Slice` controls connection resolution. Resolution order:
-  1. Explicit argument passed to `useConnection('name')`
- 2. Config value from `{sliceName}::database.default` when `useConnection()` is called without an argument
- 3. Application default connection when `useConnection()` is not used
+- `withConnection()` on `Slice` controls connection resolution. Resolution order:
+  1. Explicit argument passed to `withConnection('name')`
+ 2. Config value from `{sliceName}::database.default` when `withConnection()` is called without an argument
+  3. Application default connection when `withConnection()` is not used
 - `UsesConnection` trait: models can opt in to be bound to slice connections.
 - `SliceMigration` trait: migrations generated for slices will use the slice connection when present and provide a `schema()` helper bound to that connection.
 
@@ -226,14 +226,18 @@ Short example (connection):
 ```php
     $slice->setName('cookbook')
         ->useMigrations()
-        ->useConnection('cookbook')
-        ->bindModelsToConnection(
+        ->withConnection('cookbook', [
             \Slice\Cookbook\Models\Recipe::class,
             \Slice\Cookbook\Models\Ingredient::class
-        );
+        ]);
 ```
 
-**Testing**
+Or without models:
+
+```php
+    $slice->setName('cookbook')
+        ->useMigrations()
+        ->withConnection('cookbook');
 
 - Use `RefreshSliceDatabase` (testing helper) to run and refresh migrations for slice-specific connections and to wrap tests in transactions. Typical usage:
 
@@ -256,7 +260,7 @@ class RecipeTest extends TestCase
 
 - The namespace `slice-name::` is the canonical way to reference a slice's resources (config, views, translations).
 - Config files placed under a slice's `config/` directory are auto-registered and available via `config('slice::key')` — you don't need to call a registration helper in `configure()` to make them available.
-- Models with a dedicated connection must use `UsesConnection` trait for automatic connection binding via `bindModelsToConnection()`.
+- Models with a dedicated connection must use `UsesConnection` trait for automatic connection binding via `withConnection()`.
 
 **Contributing**
 

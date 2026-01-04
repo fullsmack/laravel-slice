@@ -72,6 +72,22 @@ class Slice
         return $this;
     }
 
+    /**
+     * Configure the slice to use a specific database connection.
+     * Optionally bind models to this connection.
+     *
+     * @param string|null $connection The connection name, or null to use config-based lookup
+     * @param array<class-string<Model>> $modelsToBind Optional array of model classes to bind to this connection
+     */
+    public function withConnection(?string $connection = null, array $modelsToBind = []): static
+    {
+        $this->usesConnection = true;
+        $this->connection = $connection;
+        $this->modelsToBind = $modelsToBind;
+
+        return $this;
+    }
+
     public function connection(): ?string
     {
         if ($this->connection !== null)
@@ -108,16 +124,6 @@ class Slice
     public function withFeature(Feature $feature): static
     {
         $this->features[] = $feature;
-
-        return $this;
-    }
-
-    /**
-     * @param class-string<Model> ...$modelClasses
-     */
-    public function bindModelsToConnection(string ...$modelClasses): static
-    {
-        $this->modelsToBind = array_merge($this->modelsToBind, $modelClasses);
 
         return $this;
     }

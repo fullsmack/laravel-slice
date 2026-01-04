@@ -194,7 +194,7 @@ final class SliceTest extends TestCase
     {
         $this->assertFalse($this->slice->usesConnection());
 
-        $result = $this->slice->useConnection('mysql');
+        $result = $this->slice->withConnection('mysql');
 
         $this->assertSame($this->slice, $result);
         $this->assertTrue($this->slice->usesConnection());
@@ -206,7 +206,7 @@ final class SliceTest extends TestCase
     {
         $this->slice->setName('test-slice');
 
-        $result = $this->slice->useConnection();
+        $result = $this->slice->withConnection();
 
         $this->assertSame($this->slice, $result);
         $this->assertTrue($this->slice->usesConnection());

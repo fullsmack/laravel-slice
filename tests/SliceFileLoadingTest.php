@@ -209,7 +209,7 @@ final class SliceFileLoadingTest extends TestCase
 
         $provider = $this->createProviderWithTempPath(function($slice) {
             $slice->useMigrations(); // Enable migrations for this test
-            $slice->useConnection('custom-connection'); // Also use a custom connection
+            $slice->withConnection('custom-connection'); // Also use a custom connection
         });
         $provider->register();
         $provider->boot();
