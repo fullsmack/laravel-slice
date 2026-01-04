@@ -37,7 +37,7 @@ trait SliceDefinitions
     {
         $sliceName = $this->option('slice');
 
-        if(!$sliceName)
+        if (!$sliceName)
         {
             return;
         }
@@ -119,7 +119,7 @@ trait SliceDefinitions
      */
     protected function viewPath($path = '')
     {
-        if(!$this->runInSlice())
+        if (!$this->runInSlice())
         {
             /** @phpstan-ignore staticMethod.notFound (viewPath exists in GeneratorCommand subclasses) */
             return parent::viewPath($path);

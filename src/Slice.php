@@ -77,7 +77,15 @@ class Slice
 
         if ($this->usesConnection)
         {
-            return config($this->name . '::database.default');
+            $configKey = $this->name . '::database.default';
+            $connection = config($configKey);
+
+            if ($connection === null)
+            {
+                throw SliceNotRegistered::becauseDatabaseConfigIsMissing($this->name, $configKey);
+            }
+
+            return $connection;
         }
 
         return null;
@@ -127,7 +135,7 @@ class Slice
 
     public function baseNamespace(string $subnamespace = null): string
     {
-        if($subnamespace === null)
+        if ($subnamespace === null)
         {
             return $this->baseNamespace;
         }

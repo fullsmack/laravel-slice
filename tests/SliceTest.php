@@ -210,8 +210,11 @@ final class SliceTest extends TestCase
 
         $this->assertSame($this->slice, $result);
         $this->assertTrue($this->slice->usesConnection());
-        // Connection returns null when using config-based connection lookup and config doesn't exist
-        $this->assertNull($this->slice->connection());
+
+        // Connection throws exception when using config-based connection lookup and config doesn't exist
+        $this->expectException(\FullSmack\LaravelSlice\SliceNotRegistered::class);
+        $this->expectExceptionMessage("Database configuration 'test-slice::database.default' is missing");
+        $this->slice->connection();
     }
 
     #[Test]

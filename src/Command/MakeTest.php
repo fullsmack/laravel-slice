@@ -39,7 +39,7 @@ class MakeTest extends TestMakeCommand
      */
     protected function getPath($name)
     {
-        if(!$this->sliceName)
+        if (!$this->sliceName)
         {
             return parent::getPath($name);
         }
@@ -66,7 +66,7 @@ class MakeTest extends TestMakeCommand
      */
     protected function rootNamespace()
     {
-        if(!isset($this->sliceName))
+        if (!isset($this->sliceName))
         {
             return parent::rootNamespace();
         }

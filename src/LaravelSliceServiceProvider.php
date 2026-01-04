@@ -60,7 +60,7 @@ class LaravelSliceServiceProvider extends ServiceProvider
 
     protected function registerCommands(): void
     {
-        if($this->app->runningInConsole())
+        if ($this->app->runningInConsole())
         {
             $this->commands($this->commands);
         }

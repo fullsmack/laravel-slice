@@ -180,6 +180,51 @@ final class SliceFileLoadingTest extends TestCase
         $this->assertEquals('Welcome to our app', __('Welcome'));
     }
 
+    #[Test]
+    public function it_loads_migrations_from_database_migrations_directory(): void
+    {
+        // Create a test migration file
+        $migrationsDir = $this->tempSliceDir . '/database/migrations';
+        File::makeDirectory($migrationsDir, 0755, true);
+        File::put($migrationsDir . '/2024_01_01_000000_create_test_table.php', "<?php\nuse Illuminate\Database\Migrations\Migration;\nclass CreateTestTable extends Migration {\n    public function up() {}\n    public function down() {}\n}");
+
+        $provider = $this->createProviderWithTempPath(function($slice) {
+            $slice->useMigrations(); // Enable migrations for this test
+        });
+        $provider->register();
+        $provider->boot();
+
+        // If we get here without exception, the migration loading worked
+        /** @phpstan-ignore method.alreadyNarrowedType */
+        $this->assertTrue(true);
+    }
+
+    #[Test]
+    public function it_loads_migrations_even_when_slice_uses_connection(): void
+    {
+        // Create a test migration file
+        $migrationsDir = $this->tempSliceDir . '/database/migrations';
+        File::makeDirectory($migrationsDir, 0755, true);
+        File::put($migrationsDir . '/2024_01_01_000000_create_test_table.php', "<?php\nuse Illuminate\Database\Migrations\Migration;\nclass CreateTestTable extends Migration {\n    public function up() {}\n    public function down() {}\n}");
+
+        $provider = $this->createProviderWithTempPath(function($slice) {
+            $slice->useMigrations(); // Enable migrations for this test
+            $slice->useConnection('custom-connection'); // Also use a custom connection
+        });
+        $provider->register();
+        $provider->boot();
+
+        // Verify that the migration directory was added to the migrator's paths
+        $migrator = $this->app->make('migrator');
+        $paths = $migrator->paths();
+
+        // The path should be resolved - src/../database/migrations should equal database/migrations
+        $expectedPath = realpath($migrationsDir);
+        $actualPathsResolved = array_map('realpath', $paths);
+
+        $this->assertContains($expectedPath, $actualPathsResolved, 'Migration directory should be registered even when slice uses a connection');
+    }
+
     private function createProviderWithTempPath(callable $configureCallback = null): SliceServiceProvider
     {
         return new class($this->app, $this->tempSliceDir, $configureCallback) extends SliceServiceProvider {

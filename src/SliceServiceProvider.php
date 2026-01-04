@@ -49,7 +49,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         $this->configure($this->slice);
 
-        if($this->slice->name() === '')
+        if ($this->slice->name() === '')
         {
             throw SliceNotRegistered::becauseNameIsNotDefined();
         }
@@ -68,33 +68,33 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         $this->registerConfig();
 
-        if($this->slice->hasRoutes())
+        if ($this->slice->hasRoutes())
         {
             $this->registerRoutes();
         }
 
-        if($this->slice->hasTranslations())
+        if ($this->slice->hasTranslations())
         {
             $this->registerTranslations();
         }
 
-        if($this->slice->hasViews())
+        if ($this->slice->hasViews())
         {
             $this->registerViews();
         }
 
         $this->registerFeatures();
 
-        if($this->app->runningInConsole())
+        if ($this->app->runningInConsole())
         {
             $commands = $this->slice->commands();
 
-            if($commands !== [])
+            if ($commands !== [])
             {
                 $this->commands($commands);
             }
 
-            if($this->slice->hasMigrations() && !$this->slice->usesConnection())
+            if($this->slice->hasMigrations())
             {
                 $this->registerMigrations();
             }
@@ -107,7 +107,7 @@ abstract class SliceServiceProvider extends ServiceProvider
     {
         $configDirectory = $this->slice->basePath('/../config');
 
-        if($this->filesystem->isDirectory($configDirectory))
+        if ($this->filesystem->isDirectory($configDirectory))
         {
             $files = $this->filesystem->allFiles($configDirectory.'/');
 
@@ -195,7 +195,7 @@ abstract class SliceServiceProvider extends ServiceProvider
     {
         foreach($this->slice->features() as $feature)
         {
-            if($feature instanceof Feature)
+            if ($feature instanceof Feature)
             {
                 $feature->register($this->slice);
             }

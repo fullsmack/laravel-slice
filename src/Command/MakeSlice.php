@@ -35,7 +35,7 @@ class MakeSlice extends Command
     {
         $this->defineSliceUsingArgument();
 
-        if(File::exists($this->slicePath))
+        if (File::exists($this->slicePath))
         {
             $this->error("Slice with name \"{$this->sliceName}\" already exists");
 
@@ -106,7 +106,7 @@ class MakeSlice extends Command
 
         $providerClass = "{$namespace}\\{$slicePascalName}ServiceProvider";
 
-        if(config('laravel-slice.discovery.type') === 'composer')
+        if (config('laravel-slice.discovery.type') === 'composer')
         {
             // Update extra section for Laravel providers
             if (!isset($composerData['extra']['laravel']['providers']))

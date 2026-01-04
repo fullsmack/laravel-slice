@@ -54,4 +54,13 @@ class SliceNotRegistered extends LogicException
             "Create the directory or remove ->useMigrations() from your slice configuration."
         );
     }
+
+    public static function becauseDatabaseConfigIsMissing(string $sliceName, string $configKey): self
+    {
+        return new self(
+            "Database configuration '{$configKey}' is missing for slice '{$sliceName}'. " .
+            "Either provide an explicit connection with ->useConnection('connection-name') or " .
+            "create the config file with the required database.default setting."
+        );
+    }
 }

@@ -46,7 +46,16 @@ trait RefreshSliceDatabase
             );
         }
 
-        $connection = $slice->connection();
+        try {
+            $connection = $slice->connection();
+        } catch (SliceNotRegistered $e) {
+            throw new RuntimeException(
+                "Slice '{$sliceName}' is configured to use a connection but no connection is defined. " .
+                "Either pass a connection name to ->useConnection('connection-name') or define '{$sliceName}::database.default' in config.",
+                0,
+                $e
+            );
+        }
 
         if ($connection === null)
         {
