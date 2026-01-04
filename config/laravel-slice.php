@@ -3,7 +3,7 @@
 return [
     'root' => [
         'folder' => 'src',
-        'namespace' => 'module',
+        'namespace' => 'slice',
     ],
     'test' => [
         'namespace' => 'test',
