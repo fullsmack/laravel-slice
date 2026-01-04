@@ -8,7 +8,7 @@ use PHPUnit\Framework\Attributes\Test;
 use FullSmack\LaravelSlice\Feature;
 use FullSmack\LaravelSlice\Slice;
 
-class FeatureTest extends TestCase
+final class FeatureTest extends TestCase
 {
     #[Test]
     public function it_registers_a_feature(): void

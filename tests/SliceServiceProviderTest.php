@@ -5,18 +5,15 @@ namespace FullSmack\LaravelSlice\Test;
 
 use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\View;
-use Illuminate\Filesystem\Filesystem;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\SliceServiceProvider;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\Test\Double\FeatureFake;
 
-class SliceServiceProviderTest extends TestCase
+final class SliceServiceProviderTest extends TestCase
 {
+    /** @var array<string> */
     private array $hooksCalled = [];
 
     private function createTestProvider(): SliceServiceProvider

@@ -7,12 +7,11 @@ use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Route;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceServiceProvider;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 
-class SliceFileLoadingTest extends TestCase
+final class SliceFileLoadingTest extends TestCase
 {
     private string $tempSliceDir;
 
@@ -35,6 +34,7 @@ class SliceFileLoadingTest extends TestCase
         */
 
         $this->tempSliceDir = sys_get_temp_dir() . '/test-slice-' . uniqid();
+
         File::makeDirectory($this->tempSliceDir, 0755, true);
 
         // Create the src directory - this will be our slice base path

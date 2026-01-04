@@ -11,7 +11,7 @@ use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\Testing\RefreshSliceDatabase;
 
-class RefreshSliceDatabaseTest extends TestCase
+final class RefreshSliceDatabaseTest extends TestCase
 {
     use RefreshSliceDatabase;
 
