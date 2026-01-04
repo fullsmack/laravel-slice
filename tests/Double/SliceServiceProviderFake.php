@@ -36,6 +36,11 @@ final class SliceServiceProviderFake extends SliceServiceProvider
         {
             $slice->setBasePath($this->basePath);
         }
+
+        if (!empty($this->modelClasses))
+        {
+            $slice->bindModelsToConnection(...$this->modelClasses);
+        }
     }
 
     public function withConnection(?string $connection = null): static
@@ -58,16 +63,6 @@ final class SliceServiceProviderFake extends SliceServiceProvider
         $this->modelClasses = $modelClasses;
 
         return $this;
-    }
-
-    public function boot(): void
-    {
-        parent::boot();
-
-        if (!empty($this->modelClasses))
-        {
-            $this->bindModelsToConnection(...$this->modelClasses);
-        }
     }
 
     public function getSlice(): Slice

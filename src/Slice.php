@@ -5,6 +5,7 @@ namespace FullSmack\LaravelSlice;
 
 use FullSmack\LaravelSlice\Feature;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 
 class Slice
 {
@@ -24,6 +25,9 @@ class Slice
 
     /** @var array<Feature> */
     private array $features = [];
+
+    /** @var array<class-string<Model>> */
+    private array $modelsToBind = [];
 
     public function setName(string $name): static
     {
@@ -108,6 +112,16 @@ class Slice
         return $this;
     }
 
+    /**
+     * @param class-string<Model> ...$modelClasses
+     */
+    public function bindModelsToConnection(string ...$modelClasses): static
+    {
+        $this->modelsToBind = array_merge($this->modelsToBind, $modelClasses);
+
+        return $this;
+    }
+
     public function basePath(string $directory = null): string
     {
         if ($directory === null)
@@ -187,6 +201,14 @@ class Slice
     public function features(): array
     {
         return $this->features;
+    }
+
+    /**
+     * @return array<class-string<Model>>
+     */
+    public function modelsToBind(): array
+    {
+        return $this->modelsToBind;
     }
 
     public function migrationPath(): string

@@ -119,7 +119,7 @@ src/your-slice-name/
 **Configuring a Slice**
 
 - `Slice` is the configuration object you receive in `configure(Slice $slice)`.
-- Common fluent methods: `setName()`, `useViews()`, `useTranslations()`, `useMigrations()`, `useRoutes()`, `withCommands()`, `withFeature()`, `useConnection()`.
+- Common fluent methods: `setName()`, `useViews()`, `useTranslations()`, `useMigrations()`, `useRoutes()`, `withCommands()`, `withFeature()`, `useConnection()`, `bindModelsToConnection()`.
 
 Short example (minimal):
 
@@ -227,10 +227,10 @@ Short example (connection):
     $slice->setName('cookbook')
         ->useMigrations()
         ->useConnection('cookbook')
-        ->bindModelsToConnection([
-            Recipe::class,
-            Delivery::class,
-        ]);
+        ->bindModelsToConnection(
+            \Slice\Cookbook\Models\Recipe::class,
+            \Slice\Cookbook\Models\Ingredient::class
+        );
 ```
 
 **Testing**

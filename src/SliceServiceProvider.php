@@ -85,6 +85,8 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         $this->registerFeatures();
 
+        $this->bindModelsToConnection();
+
         if ($this->app->runningInConsole())
         {
             $commands = $this->slice->commands();
@@ -258,25 +260,26 @@ abstract class SliceServiceProvider extends ServiceProvider
     }
 
     /**
-     * Bind the slice's connection to multiple model classes.
+     * Bind the slice's connection to configured model classes.
      *
-     * This sets the default connection for all specified models to use
-     * the connection defined via $slice->useConnection().
+     * This sets the default connection for all models configured via
+     * $slice->bindModelsToConnection() to use the connection defined
+     * via $slice->useConnection().
      *
      * Models must use the UsesConnection trait for this to work.
-     *
-     * @param class-string<Model> ...$modelClasses
      */
-    protected function bindModelsToConnection(string ...$modelClasses): void
+    protected function bindModelsToConnection(): void
     {
-        if (!$this->slice->usesConnection())
+        $modelsToBind = $this->slice->modelsToBind();
+
+        if ($modelsToBind === [] || !$this->slice->usesConnection())
         {
             return;
         }
 
         $connection = $this->slice->connection();
 
-        foreach ($modelClasses as $modelClass)
+        foreach ($modelsToBind as $modelClass)
         {
             if (method_exists($modelClass, 'useConnection'))
             {
