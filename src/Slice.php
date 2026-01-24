@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Slice
 {
     protected string $name = '';
+    protected string $identifier = '';  // Full path identifier for registry (e.g., "api/pizza")
     protected string $basePath;
     protected string $baseNamespace;
 
@@ -33,7 +34,25 @@ class Slice
     {
         $this->name = $name;
 
+        // Default identifier to name if not set separately
+        if (empty($this->identifier))
+        {
+            $this->identifier = $name;
+        }
+
         return $this;
+    }
+
+    public function setIdentifier(string $identifier): static
+    {
+        $this->identifier = $identifier;
+
+        return $this;
+    }
+
+    public function identifier(): string
+    {
+        return $this->identifier ?: $this->name;
     }
 
     public function useRoutes(): static

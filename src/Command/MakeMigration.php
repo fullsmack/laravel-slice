@@ -9,13 +9,16 @@ use FullSmack\LaravelSlice\SliceRegistry;
 
 class MakeMigration extends MigrateMakeCommand
 {
+    use SliceDefinitions;
+
     protected $signature = 'make:migration {name : The name of the migration}
         {--create= : The table to be created}
         {--table= : The table to migrate}
         {--path= : The location where the migration file should be created}
         {--realpath : Indicate any provided migration file paths are pre-resolved absolute paths}
         {--fullpath : Output the full path of the migration (Deprecated)}
-        {--slice= : The slice that the migration belongs to}';
+        {--slice= : The slice that the migration belongs to}
+        {--dir= : Subdirectory where the slice is located}';
 
     /**
      * @return void
@@ -31,14 +34,12 @@ class MakeMigration extends MigrateMakeCommand
             return;
         }
 
-        $sliceName = Str::kebab($sliceName);
-        $config = config('laravel-slice');
-        $sliceRootFolder = Str::lower($config['root']['folder']);
+        $this->defineSliceUsingOption();
 
-        $path = "{$sliceRootFolder}/{$sliceName}/database/migrations";
+        $path = "{$this->slicePath}/database/migrations";
         $this->input->setOption('path', $path);
 
-        $connection = $this->resolveSliceConnection($sliceName);
+        $connection = $this->resolveSliceConnection();
 
         $name = Str::snake(trim($this->input->getArgument('name')));
 
@@ -47,14 +48,16 @@ class MakeMigration extends MigrateMakeCommand
         $this->writeMigrationWithSlice($name, $table, $connection, $path);
     }
 
-    protected function resolveSliceConnection(string $sliceName): ?string
+    protected function resolveSliceConnection(): ?string
     {
-        if (!SliceRegistry::has($sliceName))
+        $registryKey = $this->sliceFullPath ?? $this->sliceName;
+
+        if (!SliceRegistry::has($registryKey))
         {
             return null;
         }
 
-        $slice = SliceRegistry::get($sliceName);
+        $slice = SliceRegistry::get($registryKey);
 
         return $slice->usesConnection() ? $slice->connection() : null;
     }

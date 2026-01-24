@@ -64,6 +64,7 @@ class MakeComponent extends ComponentMakeCommand
     {
         return array_merge(parent::getOptions(), [
             ['slice', null, InputOption::VALUE_OPTIONAL, 'Create the component in a slice'],
+            ['dir', null, InputOption::VALUE_OPTIONAL, 'Subdirectory to create the component in'],
         ]);
     }
 }

@@ -16,7 +16,7 @@ class MakeSlice extends Command
     /**
      * @var string
      */
-    protected $signature = 'make:slice {sliceName}';
+    protected $signature = 'make:slice {sliceName} {--dir= : Subdirectory to create the slice in}';
 
     /**
      * @var string
@@ -63,8 +63,8 @@ class MakeSlice extends Command
         $serviceProviderContent = File::get($stubPath);
 
         $serviceProviderContent = Str::replace(
-            ['{{sliceRootNamespace}}','{{slicePascalName}}', '{{sliceName}}'],
-            [$this->sliceRootNamespace, $slicePascalName, $this->sliceName],
+            ['{{sliceRootNamespace}}','{{slicePascalName}}', '{{sliceName}}', '{{sliceFullPath}}'],
+            [$this->sliceRootNamespace, $slicePascalName, $this->sliceName, $this->sliceFullPath],
             $serviceProviderContent
         );
 
@@ -87,7 +87,10 @@ class MakeSlice extends Command
 
         $slicePascalName = Str::studly($this->sliceName);
 
-        $sliceRoot = "{$this->sliceRootFolder}/{$this->sliceName}";
+        // Use sliceFullPath for filesystem path (e.g., "api/pizza")
+        $sliceRoot = "{$this->sliceRootFolder}/{$this->sliceFullPath}";
+
+        // Build namespace with full path consideration
         $namespace = "{$this->sliceRootNamespace}\\{$slicePascalName}";
 
         $testNamespace = "{$this->sliceTestNamespace}\\{$slicePascalName}";

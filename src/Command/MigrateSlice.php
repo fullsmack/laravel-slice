@@ -24,7 +24,8 @@ class MigrateSlice extends MigrateCommand
                         {--seed : Indicates if the seed task should be re-run}
                         {--seeder= : The class name of the root seeder}
                         {--step : Force the migrations to be run so they can be rolled back individually}
-                        {--slice= : Run migrations for a specific slice}';
+                        {--slice= : Run migrations for a specific slice}
+                        {--dir= : Subdirectory where the slice is located}';
 
     /**
      * @var string

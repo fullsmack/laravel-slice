@@ -14,6 +14,7 @@ trait SliceDefinitions
 {
     private string $sliceName;
     private string $slicePath;
+    private string $sliceFullPath;
     private string $sliceRootFolder;
     private string $sliceRootNamespace;
     private string $sliceTestFolder;
@@ -30,7 +31,9 @@ trait SliceDefinitions
             return;
         }
 
-        $this->defineSlice($sliceName);
+        $dirOption = method_exists($this, 'option') ? $this->option('dir') : null;
+
+        $this->defineSlice($sliceName, $dirOption);
     }
 
     private function defineSliceUsingOption(): void
@@ -45,16 +48,94 @@ trait SliceDefinitions
         $this->defineSlice($sliceName);
     }
 
-    private function defineSlice(string $sliceName): void
+    /**
+     * Validate and normalize the slice identifier (name or path).
+     * Ensures forward slashes are used and warns if backslashes are detected.
+     */
+    private function validateSliceIdentifier(string $identifier): string
+    {
+        if (str_contains($identifier, '\\'))
+        {
+            $this->warn("Please use forward slashes (/) instead of backslashes (\\) in slice paths.");
+            $identifier = str_replace('\\', '/', $identifier);
+        }
+
+        return trim($identifier, '/');
+    }
+
+    /**
+     * Parse the slice identifier to extract subdirectory path and slice name.
+     * Returns [subdirectoryPath, sliceName]
+     */
+    private function parseSliceIdentifier(string $identifier): array
+    {
+        $identifier = $this->validateSliceIdentifier($identifier);
+
+        $segments = explode('/', $identifier);
+        $sliceName = array_pop($segments);
+        $subdirectoryPath = implode('/', $segments);
+
+        return [$subdirectoryPath, $sliceName];
+    }
+
+    /**
+     * Build the slice namespace based on config and subdirectory path.
+     */
+    private function buildSliceNamespace(string $subdirectoryPath, string $dirOption = null): string
+    {
+        $config = config('laravel-slice');
+        $namespaceMode = $config['root']['namespace-mode'] ?? 'prefix';
+        $rootNamespace = Str::studly($config['root']['namespace']);
+
+        // Combine dirOption and subdirectoryPath
+        $fullSubdirectory = $dirOption
+            ? ($subdirectoryPath ? "$dirOption/$subdirectoryPath" : $dirOption)
+            : $subdirectoryPath;
+
+        $pathSegments = $fullSubdirectory
+            ? array_map([Str::class, 'studly'], explode('/', $fullSubdirectory))
+            : [];
+
+        if ($namespaceMode === 'fallback' && !empty($pathSegments))
+        {
+            // Use path-based namespace only, no root namespace prepended
+            return implode('\\', $pathSegments);
+        }
+
+        // 'prefix' mode or no path: always use root namespace
+        if (empty($pathSegments))
+        {
+            return $rootNamespace;
+        }
+
+        return $rootNamespace . '\\' . implode('\\', $pathSegments);
+    }
+
+    private function defineSlice(string $sliceName, ?string $dirOption = null): void
     {
         $config = config('laravel-slice');
 
-        $this->sliceName = Str::kebab($sliceName);
+        [$subdirectoryPath, $actualSliceName] = $this->parseSliceIdentifier($sliceName);
 
+        $this->sliceName = Str::kebab($actualSliceName);
         $this->sliceRootFolder = Str::lower($config['root']['folder']);
-        $this->slicePath = base_path("{$this->sliceRootFolder}/{$this->sliceName}");
 
-        $this->sliceRootNamespace = Str::studly($config['root']['namespace']);
+        // Combine dirOption and subdirectoryPath for full path
+        $fullSubdirectory = $dirOption
+            ? ($subdirectoryPath ? "$dirOption/$subdirectoryPath" : $dirOption)
+            : $subdirectoryPath;
+
+        // Build the full path identifier for registry (e.g., "api/pizza")
+        $this->sliceFullPath = $fullSubdirectory
+            ? $fullSubdirectory . '/' . $this->sliceName
+            : $this->sliceName;
+
+        // Build filesystem path
+        $this->slicePath = $fullSubdirectory
+            ? base_path("{$this->sliceRootFolder}/{$fullSubdirectory}/{$this->sliceName}")
+            : base_path("{$this->sliceRootFolder}/{$this->sliceName}");
+
+        $this->sliceRootNamespace = $this->buildSliceNamespace($subdirectoryPath, $dirOption);
         $this->sliceTestNamespace = Str::studly($config['test']['namespace']);
     }
 
@@ -70,12 +151,15 @@ trait SliceDefinitions
             return null;
         }
 
-        if (!SliceRegistry::has($this->sliceName))
+        // Use full path for registry lookup
+        $registryKey = $this->sliceFullPath ?? $this->sliceName;
+
+        if (!SliceRegistry::has($registryKey))
         {
             return null;
         }
 
-        return SliceRegistry::get($this->sliceName);
+        return SliceRegistry::get($registryKey);
     }
 
     private function sliceUsesConnection(): bool
