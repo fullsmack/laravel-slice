@@ -5,7 +5,6 @@ namespace FullSmack\LaravelSlice;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Console\Command;
-
 use FullSmack\LaravelSlice\Command\MakeSlice;
 use FullSmack\LaravelSlice\Command\MakeTest;
 use FullSmack\LaravelSlice\Command\MakeComponent;

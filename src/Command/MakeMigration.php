@@ -5,6 +5,7 @@ namespace FullSmack\LaravelSlice\Command;
 
 use Illuminate\Database\Console\Migrations\MigrateMakeCommand;
 use Illuminate\Database\Migrations\MigrationCreator;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Composer;
 use Illuminate\Support\Str;
 use FullSmack\LaravelSlice\SliceRegistry;
@@ -71,7 +72,17 @@ class MakeMigration extends MigrateMakeCommand
 
     protected function writeMigrationWithSlice(string $name, ?string $table, ?string $connection, string $path): void
     {
-        $file = $this->creator->create($name, $this->laravel->basePath($path), $table, (bool) $this->option('create'));
+        $sliceCreator = new MigrationCreator(
+            new Filesystem(),
+            dirname(__DIR__, 2) . '/stubs'
+        );
+
+        $file = $sliceCreator->create(
+            $name,
+            $path,
+            $table,
+            (bool) $this->option('create'),
+        );
 
         $this->replaceConnectionPlaceholder($file, $connection);
 
