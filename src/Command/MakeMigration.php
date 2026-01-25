@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice\Command;
 
 use Illuminate\Database\Console\Migrations\MigrateMakeCommand;
+use Illuminate\Database\Migrations\MigrationCreator;
+use Illuminate\Support\Composer;
 use Illuminate\Support\Str;
 use FullSmack\LaravelSlice\SliceRegistry;
 
@@ -19,6 +21,11 @@ class MakeMigration extends MigrateMakeCommand
         {--fullpath : Output the full path of the migration (Deprecated)}
         {--slice= : The slice that the migration belongs to}
         {--dir= : Subdirectory where the slice is located}';
+
+    public function __construct(MigrationCreator $creator, Composer $composer)
+    {
+        parent::__construct($creator, $composer);
+    }
 
     /**
      * @return void
