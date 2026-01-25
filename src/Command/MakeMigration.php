@@ -43,9 +43,10 @@ class MakeMigration extends MigrateMakeCommand
 
         $this->defineSliceUsingOption();
 
-        $path = "{$this->slicePath}/database/migrations";
+        $migrationsPath = "{$this->slicePath}/database/migrations";
 
-        $this->input->setOption('path', $path);
+        $this->input->setOption('path', $migrationsPath);
+        $this->input->setOption('realpath', true);
 
         parent::handle();
     }
