@@ -56,7 +56,7 @@ class MakeSlice extends Command
             File::makeDirectory("{$this->slicePath}/$directory", 0755, true, true);
         }
 
-        $slicePascalName = Str::studly($this->sliceName);
+        $slicePascalName = Str::studly($this->sliceFolderName);
 
         $stubPath = __DIR__ .'/../../stubs/SliceServiceProvider.stub';
 
@@ -64,7 +64,7 @@ class MakeSlice extends Command
 
         $serviceProviderContent = Str::replace(
             ['{{sliceRootNamespace}}','{{slicePascalName}}', '{{sliceName}}', '{{sliceFullPath}}'],
-            [$this->sliceRootNamespace, $slicePascalName, $this->sliceName, $this->sliceFullPath],
+            [$this->sliceNamespaceBase, $slicePascalName, $this->sliceName, $this->sliceFullPath],
             $serviceProviderContent
         );
 
@@ -85,13 +85,13 @@ class MakeSlice extends Command
         $composerFile = base_path('composer.json');
         $composerData = File::json($composerFile);
 
-        $slicePascalName = Str::studly($this->sliceName);
+        $slicePascalName = Str::studly($this->sliceFolderName);
 
         // Use sliceFullPath for filesystem path (e.g., "api/pizza")
         $sliceRoot = "{$this->sliceRootFolder}/{$this->sliceFullPath}";
 
         // Build namespace with full path consideration
-        $namespace = "{$this->sliceRootNamespace}\\{$slicePascalName}";
+        $namespace = "{$this->sliceNamespaceBase}\\{$slicePascalName}";
 
         $testNamespace = "{$this->sliceTestNamespace}\\{$slicePascalName}";
 

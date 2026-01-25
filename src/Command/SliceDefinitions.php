@@ -13,11 +13,14 @@ use FullSmack\LaravelSlice\SliceRegistry;
 trait SliceDefinitions
 {
     private string $sliceName;
+    private string $sliceFolderName;
     private string $slicePath;
     private string $sliceFullPath;
     private string $sliceRootFolder;
-    private string $sliceRootNamespace;
+    private string $sliceNamespaceBase;
     private string $sliceTestFolder;
+    private string $testNamespaceBase;
+    private string $sliceNamespace;
     private string $sliceTestNamespace;
 
     private function defineSliceUsingArgument(): void
@@ -45,7 +48,16 @@ trait SliceDefinitions
             return;
         }
 
-        $this->defineSlice($sliceName);
+        // Try to get slice from registry first (for existing slices)
+        if (SliceRegistry::has($sliceName))
+        {
+            $this->defineSliceFromRegistry($sliceName);
+        }
+        else
+        {
+            // Fallback to path-based definition for slice creation commands
+            $this->defineSlice($sliceName);
+        }
     }
 
     /**
@@ -65,11 +77,19 @@ trait SliceDefinitions
 
     /**
      * Parse the slice identifier to extract subdirectory path and slice name.
+     * Handles both slash notation (api/posts) and dot notation (api.posts).
      * Returns [subdirectoryPath, sliceName]
      */
     private function parseSliceIdentifier(string $identifier): array
     {
         $identifier = $this->validateSliceIdentifier($identifier);
+
+        // Convert dot notation to slash notation (api.posts -> api/posts)
+        // Only if there are no slashes already present
+        if (!str_contains($identifier, '/') && str_contains($identifier, '.'))
+        {
+            $identifier = str_replace('.', '/', $identifier);
+        }
 
         $segments = explode('/', $identifier);
         $sliceName = array_pop($segments);
@@ -117,7 +137,7 @@ trait SliceDefinitions
 
         [$subdirectoryPath, $actualSliceName] = $this->parseSliceIdentifier($sliceName);
 
-        $this->sliceName = Str::kebab($actualSliceName);
+        $this->sliceFolderName = Str::kebab($actualSliceName);
         $this->sliceRootFolder = Str::lower($config['root']['folder']);
 
         // Combine dirOption and subdirectoryPath for full path
@@ -127,16 +147,35 @@ trait SliceDefinitions
 
         // Build the full path identifier for registry (e.g., "api/pizza")
         $this->sliceFullPath = $fullSubdirectory
-            ? $fullSubdirectory . '/' . $this->sliceName
-            : $this->sliceName;
+            ? $fullSubdirectory . '/' . $this->sliceFolderName
+            : $this->sliceFolderName;
+
+        // Build the full slice name with dot notation (e.g., "api.posts")
+        $this->sliceName = $fullSubdirectory
+            ? str_replace('/', '.', $this->sliceFullPath)
+            : $this->sliceFolderName;
 
         // Build filesystem path
         $this->slicePath = $fullSubdirectory
-            ? base_path("{$this->sliceRootFolder}/{$fullSubdirectory}/{$this->sliceName}")
-            : base_path("{$this->sliceRootFolder}/{$this->sliceName}");
+            ? base_path("{$this->sliceRootFolder}/{$fullSubdirectory}/{$this->sliceFolderName}")
+            : base_path("{$this->sliceRootFolder}/{$this->sliceFolderName}");
 
-        $this->sliceRootNamespace = $this->buildSliceNamespace($subdirectoryPath, $dirOption);
-        $this->sliceTestNamespace = Str::studly($config['test']['namespace']);
+        $this->sliceNamespaceBase = $this->buildSliceNamespace($subdirectoryPath, $dirOption);
+
+        // Build test namespace base to mirror slice namespace structure
+        $config = config('laravel-slice');
+        $testRootNamespace = Str::studly($config['test']['namespace']);
+        $pathSegments = $fullSubdirectory
+            ? array_map([Str::class, 'studly'], explode('/', $fullSubdirectory))
+            : [];
+
+        $this->testNamespaceBase = empty($pathSegments)
+            ? $testRootNamespace
+            : $testRootNamespace . '\\' . implode('\\', $pathSegments);
+
+        // Compute full namespaces
+        $this->sliceNamespace = $this->sliceNamespaceBase . '\\' . Str::studly($this->sliceFolderName);
+        $this->sliceTestNamespace = $this->testNamespaceBase . '\\' . Str::studly($this->sliceFolderName);
     }
 
     private function runInSlice(): bool
@@ -151,15 +190,12 @@ trait SliceDefinitions
             return null;
         }
 
-        // Use full path for registry lookup
-        $registryKey = $this->sliceFullPath ?? $this->sliceName;
-
-        if (!SliceRegistry::has($registryKey))
+        if (!SliceRegistry::has($this->sliceName))
         {
             return null;
         }
 
-        return SliceRegistry::get($registryKey);
+        return SliceRegistry::get($this->sliceName);
     }
 
     private function sliceUsesConnection(): bool
@@ -181,7 +217,7 @@ trait SliceDefinitions
      */
     protected function rootNamespace()
     {
-        return $this->sliceRootNamespace.'\\'.Str::studly($this->sliceName).'\\';
+        return $this->sliceNamespace . '\\';
     }
 
     /**

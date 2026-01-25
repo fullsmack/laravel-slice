@@ -53,14 +53,12 @@ class MakeMigration extends MigrateMakeCommand
 
     protected function resolveSliceConnection(): ?string
     {
-        $registryKey = $this->sliceFullPath ?? $this->sliceName;
-
-        if (!SliceRegistry::has($registryKey))
+        if (!SliceRegistry::has($this->sliceName))
         {
             return null;
         }
 
-        $slice = SliceRegistry::get($registryKey);
+        $slice = SliceRegistry::get($this->sliceName);
 
         return $slice->usesConnection() ? $slice->connection() : null;
     }
