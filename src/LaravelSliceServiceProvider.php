@@ -54,7 +54,7 @@ class LaravelSliceServiceProvider extends ServiceProvider
         {
             $this->publishes([
                 __DIR__.'/../config/laravel-slice.php' => config_path('laravel-slice.php'),
-            ], 'config');
+            ], 'laravel-slice');
         }
     }
 
