@@ -5,6 +5,7 @@ namespace FullSmack\LaravelSlice;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Console\Command;
+use Illuminate\Database\Migrations\MigrationCreator;
 use FullSmack\LaravelSlice\Command\MakeSlice;
 use FullSmack\LaravelSlice\Command\MakeTest;
 use FullSmack\LaravelSlice\Command\MakeComponent;
@@ -62,42 +63,25 @@ class LaravelSliceServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole())
         {
             $this->commands($this->commands);
-
-            // Register MakeMigration manually to ensure it overrides Laravel's default command
-            // $this->commands([
-            //     MakeMigration::class,
-            // ]);
         }
     }
 
     /**
-     * Register migration-related services to ensure proper stub resolution.
-     *
-     * This registration ensures that:
-     * - Non-slice migrations use Laravel's default stub resolution (base_path('stubs') first, then framework stubs)
-     * - Slice migrations use package-specific stubs with SliceMigration trait
-     *
-     * @return void
+     * The migration-related services register separately to ensure proper stub resolution.
      */
     protected function registerMigrationServices(): void
     {
         if ($this->app->runningInConsole())
         {
-            // Register migration creator with proper stub path for non-slice migrations
-            $this->app->singleton('migration.creator', function ($app)
-            {
-                return new \Illuminate\Database\Migrations\MigrationCreator($app['files'], $app->basePath('stubs'));
+            $this->app->singleton('migration.creator', function ($app) {
+                return new MigrationCreator($app['files'], $app->basePath('stubs'));
             });
 
-            // Register custom make:migration command with the migration creator
-            $this->app->singleton(MakeMigration::class, function ($app)
-            {
+            $this->app->singleton(MakeMigration::class, function ($app) {
                 return new MakeMigration($app['migration.creator'], $app['composer']);
             });
 
-            // Register MigrateSlice command
-            $this->app->singleton(MigrateSlice::class, function ($app)
-            {
+            $this->app->singleton(MigrateSlice::class, function ($app) {
                 return new MigrateSlice($app['migrator'], $app['events']);
             });
 
