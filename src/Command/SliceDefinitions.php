@@ -12,7 +12,7 @@ use FullSmack\LaravelSlice\SliceRegistry;
  */
 trait SliceDefinitions
 {
-    private string $sliceName;
+    private ?string $sliceName = null;
     private string $sliceFolderName;
     private string $slicePath;
     private string $sliceFullPath;
@@ -101,7 +101,7 @@ trait SliceDefinitions
     /**
      * Build the slice namespace based on config and subdirectory path.
      */
-    private function buildSliceNamespace(string $subdirectoryPath, string $dirOption = null): string
+    private function buildSliceNamespace(string $subdirectoryPath, ?string $dirOption = null): string
     {
         $config = config('laravel-slice');
         $namespaceMode = $config['root']['namespace-mode'] ?? 'prefix';

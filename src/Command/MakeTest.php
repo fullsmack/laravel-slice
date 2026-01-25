@@ -19,7 +19,7 @@ class MakeTest extends TestMakeCommand
     /**
      * @var string
      */
-    protected $signature = 'make:test {name} {--force} {--unit} {--pest} {--slice=} {--dir=}';
+    protected $signature = 'make:test {name} {--force} {--unit} {--pest} {--phpunit} {--slice=} {--dir=}';
 
     /**
      * @return bool|null
@@ -88,6 +88,7 @@ class MakeTest extends TestMakeCommand
             ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the test already exists'],
             ['unit', 'u', InputOption::VALUE_NONE, 'Create a unit test'],
             ['pest', 'p', InputOption::VALUE_NONE, 'Create a Pest test'],
+            ['phpunit', null, InputOption::VALUE_NONE, 'Create a PHPUnit test'],
             ['slice', 's', InputOption::VALUE_OPTIONAL, 'Create a test in a slice or module'],
             ['dir', null, InputOption::VALUE_OPTIONAL, 'Subdirectory to create the test in'],
         ];
