@@ -93,7 +93,7 @@ class MakeSlice extends Command
         // Build namespace with full path consideration
         $namespace = "{$this->sliceNamespaceBase}\\{$slicePascalName}";
 
-        $testNamespace = "{$this->sliceTestNamespace}\\{$slicePascalName}";
+        $testNamespace = "{$this->testNamespaceBase}\\{$slicePascalName}";
 
         // Update autoload section
         if (!isset($composerData['autoload']['psr-4'][$namespace . '\\']))
