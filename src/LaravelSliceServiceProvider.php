@@ -63,20 +63,6 @@ class LaravelSliceServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole())
         {
-            $this->app->singleton(MakeMigration::class, function ($app) {
-                return new MakeMigration(
-                    $app['migration.creator'],
-                    $app['composer']
-                );
-            });
-
-            $this->app->singleton(MigrateSlice::class, function ($app) {
-                return new MigrateSlice(
-                    $app['migrator'],
-                    $app['events'],
-                );
-            });
-
             $this->commands($this->commands);
         }
     }
