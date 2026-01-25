@@ -7,7 +7,6 @@ use Illuminate\Database\Console\Migrations\MigrateMakeCommand;
 use Illuminate\Database\Migrations\MigrationCreator;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Composer;
-use Illuminate\Support\Str;
 use FullSmack\LaravelSlice\SliceRegistry;
 
 class MakeMigration extends MigrateMakeCommand
@@ -45,15 +44,10 @@ class MakeMigration extends MigrateMakeCommand
         $this->defineSliceUsingOption();
 
         $path = "{$this->slicePath}/database/migrations";
+
         $this->input->setOption('path', $path);
 
-        $connection = $this->resolveSliceConnection();
-
-        $name = Str::snake(trim($this->input->getArgument('name')));
-
-        $table = $this->option('table') ?: $this->option('create');
-
-        $this->writeMigrationWithSlice($name, $table, $connection, $path);
+        parent::handle();
     }
 
     protected function resolveSliceConnection(): ?string
@@ -70,19 +64,26 @@ class MakeMigration extends MigrateMakeCommand
         return $slice->usesConnection() ? $slice->connection() : null;
     }
 
-    protected function writeMigrationWithSlice(string $name, ?string $table, ?string $connection, string $path): void
+    protected function writeMigration($name, $table, $create)
     {
+        if (!$this->option('slice'))
+        {
+            return parent::writeMigration($name, $table, $create);
+        }
+
         $sliceCreator = new MigrationCreator(
             new Filesystem(),
-            dirname(__DIR__, 2) . '/stubs'
+            dirname(__DIR__, 2) . '/stubs',
         );
 
         $file = $sliceCreator->create(
             $name,
-            $path,
+            $this->getMigrationPath(),
             $table,
-            (bool) $this->option('create'),
+            $create,
         );
+
+        $connection = $this->resolveSliceConnection();
 
         $this->replaceConnectionPlaceholder($file, $connection);
 
