@@ -5,6 +5,7 @@ namespace FullSmack\LaravelSlice\Command;
 
 use Illuminate\Database\Console\Migrations\MigrateCommand;
 use Illuminate\Database\Migrations\Migrator;
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 
@@ -33,9 +34,9 @@ class MigrateSlice extends MigrateCommand
      */
     protected $description = 'Run the database migrations';
 
-    public function __construct(Migrator $migrator)
+    public function __construct(Migrator $migrator, Dispatcher $dispatcher)
     {
-        parent::__construct($migrator);
+        parent::__construct($migrator, $dispatcher);
     }
 
     /**
