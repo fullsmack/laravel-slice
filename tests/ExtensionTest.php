@@ -5,15 +5,15 @@ namespace FullSmack\LaravelSlice\Test;
 
 use PHPUnit\Framework\TestCase;
 use PHPUnit\Framework\Attributes\Test;
-use FullSmack\LaravelSlice\Feature;
+use FullSmack\LaravelSlice\Extension;
 use FullSmack\LaravelSlice\Slice;
 
-final class FeatureTest extends TestCase
+final class ExtensionTest extends TestCase
 {
     #[Test]
-    public function it_registers_a_feature(): void
+    public function it_registers_an_extension(): void
     {
-        $feature = new class implements Feature {
+        $extension = new class implements Extension {
             public bool $registerCalled = false;
 
             public function register(Slice $slice): void
@@ -23,9 +23,9 @@ final class FeatureTest extends TestCase
         };
 
         $slice = new Slice();
-        $feature->register($slice);
+        $extension->register($slice);
 
-        $this->assertTrue($feature->registerCalled);
+        $this->assertTrue($extension->registerCalled);
     }
 
     #[Test]
@@ -34,7 +34,7 @@ final class FeatureTest extends TestCase
         $slice = new Slice();
         $slice->setName('test-slice');
 
-        $feature = new class implements Feature {
+        $extension = new class implements Extension {
             public ?Slice $receivedSlice = null;
 
             public function register(Slice $slice): void
@@ -43,9 +43,9 @@ final class FeatureTest extends TestCase
             }
         };
 
-        $feature->register($slice);
+        $extension->register($slice);
 
-        $this->assertSame($slice, $feature->receivedSlice);
-        $this->assertSame('test-slice', $feature->receivedSlice->name());
+        $this->assertSame($slice, $extension->receivedSlice);
+        $this->assertSame('test-slice', $extension->receivedSlice->name());
     }
 }

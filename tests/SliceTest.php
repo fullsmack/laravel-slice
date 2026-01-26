@@ -7,7 +7,7 @@ use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\Test\Double\CommandFake;
-use FullSmack\LaravelSlice\Test\Double\FeatureFake;
+use FullSmack\LaravelSlice\Test\Double\ExtensionFake;
 
 final class SliceTest extends TestCase
 {
@@ -73,32 +73,32 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function it_adds_features(): void
+    public function it_adds_extensions(): void
     {
-        $feature = new FeatureFake();
+        $extension = new ExtensionFake();
 
-        $this->assertEmpty($this->slice->features());
+        $this->assertEmpty($this->slice->extensions());
 
-        $result = $this->slice->withFeature($feature);
+        $result = $this->slice->withExtension($extension);
 
         $this->assertSame($this->slice, $result);
-        $this->assertCount(1, $this->slice->features());
-        $this->assertSame($feature, $this->slice->features()[0]);
+        $this->assertCount(1, $this->slice->extensions());
+        $this->assertSame($extension, $this->slice->extensions()[0]);
     }
 
     #[Test]
-    public function it_adds_multiple_features(): void
+    public function it_adds_multiple_extensions(): void
     {
-        $feature1 = new FeatureFake();
-        $feature2 = new FeatureFake();
+        $extension1 = new ExtensionFake();
+        $extension2 = new ExtensionFake();
 
         $this->slice
-            ->withFeature($feature1)
-            ->withFeature($feature2);
+            ->withExtension($extension1)
+            ->withExtension($extension2);
 
-        $this->assertCount(2, $this->slice->features());
-        $this->assertSame($feature1, $this->slice->features()[0]);
-        $this->assertSame($feature2, $this->slice->features()[1]);
+        $this->assertCount(2, $this->slice->extensions());
+        $this->assertSame($extension1, $this->slice->extensions()[0]);
+        $this->assertSame($extension2, $this->slice->extensions()[1]);
     }
 
     #[Test]
@@ -106,19 +106,19 @@ final class SliceTest extends TestCase
     {
         $path = '/path/to/slice';
 
-        $result = $this->slice->setBasePath($path);
+        $result = $this->slice->setPath($path);
 
         $this->assertSame($this->slice, $result);
-        $this->assertSame($path, $this->slice->basePath());
+        $this->assertSame($path, $this->slice->path());
     }
 
     #[Test]
     public function it_gets_base_path_with_directory(): void
     {
         $basePath = '/path/to/slice';
-        $this->slice->setBasePath($basePath);
+        $this->slice->setPath($basePath);
 
-        $result = $this->slice->basePath('subdirectory');
+        $result = $this->slice->path('subdirectory');
 
         $expectedPath = $basePath . DIRECTORY_SEPARATOR . 'subdirectory';
         $this->assertSame($expectedPath, $result);
@@ -128,10 +128,10 @@ final class SliceTest extends TestCase
     public function it_handles_directory_separators_in_base_path(): void
     {
         $basePath = '/path/to/slice';
-        $this->slice->setBasePath($basePath);
+        $this->slice->setPath($basePath);
 
-        $result1 = $this->slice->basePath('/subdirectory');
-        $result2 = $this->slice->basePath('subdirectory/');
+        $result1 = $this->slice->path('/subdirectory');
+        $result2 = $this->slice->path('subdirectory/');
 
         $expectedPath = $basePath . DIRECTORY_SEPARATOR . 'subdirectory';
         $this->assertSame($expectedPath, $result1);
@@ -166,27 +166,27 @@ final class SliceTest extends TestCase
     #[Test]
     public function it_supports_method_chaining(): void
     {
-        $feature = new FeatureFake();
+        $extension = new ExtensionFake();
 
         $result = $this->slice
             ->setName('test-slice')
-            ->setBasePath('/test/path')
+            ->setPath('/test/path')
             ->setBaseNamespace('Test\\Namespace')
             ->useRoutes()
             ->useViews()
             ->useTranslations()
             ->useMigrations()
-            ->withFeature($feature);
+            ->withExtension($extension);
 
         $this->assertSame($this->slice, $result);
         $this->assertSame('test-slice', $this->slice->name());
-        $this->assertSame('/test/path', $this->slice->basePath());
+        $this->assertSame('/test/path', $this->slice->path());
         $this->assertSame('Test\\Namespace', $this->slice->baseNamespace());
         $this->assertTrue($this->slice->hasRoutes());
         $this->assertTrue($this->slice->hasViews());
         $this->assertTrue($this->slice->hasTranslations());
         $this->assertTrue($this->slice->hasMigrations());
-        $this->assertCount(1, $this->slice->features());
+        $this->assertCount(1, $this->slice->extensions());
     }
 
     #[Test]
@@ -231,7 +231,7 @@ final class SliceTest extends TestCase
     #[Test]
     public function it_gets_migration_path(): void
     {
-        $this->slice->setBasePath('/app/slices/my-slice/src');
+        $this->slice->setPath('/app/slices/my-slice/src');
 
         $migrationPath = $this->slice->migrationPath();
 

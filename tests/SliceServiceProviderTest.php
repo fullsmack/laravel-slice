@@ -5,11 +5,11 @@ namespace FullSmack\LaravelSlice\Test;
 
 use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
+use FullSmack\LaravelSlice\Test\Double\ExtensionFake;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\SliceServiceProvider;
 use FullSmack\LaravelSlice\SliceNotRegistered;
-use FullSmack\LaravelSlice\Test\Double\FeatureFake;
 
 final class SliceServiceProviderTest extends TestCase
 {
@@ -36,22 +36,22 @@ final class SliceServiceProviderTest extends TestCase
         };
     }
 
-    private function createProviderWithFeature(FeatureFake $feature): SliceServiceProvider
+    private function createProviderWithExtension(ExtensionFake $extension): SliceServiceProvider
     {
-        return new class($this->app, $feature) extends SliceServiceProvider {
-            public FeatureFake $feature;
+        return new class($this->app, $extension) extends SliceServiceProvider {
+            public ExtensionFake $extension;
 
-            public function __construct($app, FeatureFake $feature)
+            public function __construct($app, ExtensionFake $extension)
             {
                 parent::__construct($app);
 
-                $this->feature = $feature;
+                $this->extension = $extension;
             }
 
             public function configure(Slice $slice): void
             {
-                $slice->setName('feature-slice')
-                    ->withFeature($this->feature);
+                $slice->setName('extension-slice')
+                    ->withExtension($this->extension);
             }
         };
     }
@@ -88,34 +88,32 @@ final class SliceServiceProviderTest extends TestCase
     }
 
     #[Test]
-    public function it_registers_features_when_booting(): void
+    public function it_registers_extensions_when_booting(): void
     {
-        $feature = new FeatureFake();
-        $provider = $this->createProviderWithFeature($feature);
+        $extension = new ExtensionFake();
+        $provider = $this->createProviderWithExtension($extension);
         $provider->register();
 
-        $this->assertFalse($feature->registered);
+        $this->assertFalse($extension->registered);
 
         $provider->boot();
 
-        $this->assertTrue($feature->registered);
+        $this->assertTrue($extension->registered);
     }
 
     #[Test]
-    public function it_sets_base_path_from_provider_location(): void
+    public function it_sets_slice_path_from_provider_location(): void
     {
         $provider = $this->createTestProvider();
         $provider->register();
 
-        // Use reflection to access the protected slice property
         $reflection = new \ReflectionClass($provider);
         $sliceProperty = $reflection->getProperty('slice');
         $sliceProperty->setAccessible(true);
         $slice = $sliceProperty->getValue($provider);
 
-        // Anonymous classes are defined in this test file
-        $expectedPath = dirname((new \ReflectionClass($provider))->getFileName());
-        $this->assertSame($expectedPath, $slice->basePath());
+        $expectedPath = dirname(dirname((new \ReflectionClass($provider))->getFileName()));
+        $this->assertSame($expectedPath, $slice->path());
     }
 
     #[Test]
@@ -124,7 +122,6 @@ final class SliceServiceProviderTest extends TestCase
         $provider = $this->createTestProvider();
         $provider->register();
 
-        // Use reflection to access the protected slice property
         $reflection = new \ReflectionClass($provider);
         $sliceProperty = $reflection->getProperty('slice');
         $sliceProperty->setAccessible(true);
@@ -191,27 +188,27 @@ final class SliceServiceProviderTest extends TestCase
     }
 
     #[Test]
-    public function it_registers_slice_with_multiple_features(): void
+    public function it_registers_slice_with_multiple_extensions(): void
     {
-        $feature1 = new FeatureFake();
-        $feature2 = new FeatureFake();
+        $extension1 = new ExtensionFake();
+        $extension2 = new ExtensionFake();
 
-        $provider = new class($this->app, $feature1, $feature2) extends SliceServiceProvider {
-            private FeatureFake $feature1;
-            private FeatureFake $feature2;
+        $provider = new class($this->app, $extension1, $extension2) extends SliceServiceProvider {
+            private ExtensionFake $extension1;
+            private ExtensionFake $extension2;
 
-            public function __construct($app, FeatureFake $feature1, FeatureFake $feature2)
+            public function __construct($app, ExtensionFake $extension1, ExtensionFake $extension2)
             {
                 parent::__construct($app);
-                $this->feature1 = $feature1;
-                $this->feature2 = $feature2;
+                $this->extension1 = $extension1;
+                $this->extension2 = $extension2;
             }
 
             public function configure(Slice $slice): void
             {
-                $slice->setName('multi-feature-slice')
-                    ->withFeature($this->feature1)
-                    ->withFeature($this->feature2);
+                $slice->setName('multi-extension-slice')
+                    ->withExtension($this->extension1)
+                    ->withExtension($this->extension2);
             }
 
             public function getSlice(): Slice
@@ -226,10 +223,10 @@ final class SliceServiceProviderTest extends TestCase
         /** @disregard P1013 method is defined on anonymous class */
         $slice = $provider->getSlice();
 
-        $this->assertSame('multi-feature-slice', $slice->name());
-        $this->assertCount(2, $slice->features());
-        $this->assertTrue($feature1->registered);
-        $this->assertTrue($feature2->registered);
+        $this->assertSame('multi-extension-slice', $slice->name());
+        $this->assertCount(2, $slice->extensions());
+        $this->assertTrue($extension1->registered);
+        $this->assertTrue($extension2->registered);
     }
 
     #[Test]

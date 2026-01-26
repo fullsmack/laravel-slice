@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceRegistry;
-use FullSmack\LaravelSlice\Feature;
+use FullSmack\LaravelSlice\Extension;
 
 abstract class SliceServiceProvider extends ServiceProvider
 {
@@ -83,7 +83,7 @@ abstract class SliceServiceProvider extends ServiceProvider
             $this->registerViews();
         }
 
-        $this->registerFeatures();
+        $this->registerExtensions();
 
         $this->bindModelsToConnection();
 
@@ -193,13 +193,13 @@ abstract class SliceServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom($migrationDirectory);
     }
 
-    protected function registerFeatures(): void
+    protected function registerExtensions(): void
     {
-        foreach ($this->slice->features() as $feature)
+        foreach ($this->slice->extensions() as $extension)
         {
-            if ($feature instanceof Feature)
+            if ($extension instanceof Extension)
             {
-                $feature->register($this->slice);
+                $extension->register($this->slice);
             }
         }
     }

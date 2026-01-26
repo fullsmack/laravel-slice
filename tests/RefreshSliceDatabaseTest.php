@@ -49,7 +49,7 @@ final class RefreshSliceDatabaseTest extends TestCase
     {
         $slice = (new Slice())
             ->setName('no-connection-slice')
-            ->setBasePath(sys_get_temp_dir());
+            ->setPath(sys_get_temp_dir());
 
         SliceRegistry::register($slice);
 
@@ -64,7 +64,7 @@ final class RefreshSliceDatabaseTest extends TestCase
     {
         $slice = (new Slice())
             ->setName('null-connection-slice')
-            ->setBasePath(sys_get_temp_dir())
+            ->setPath(sys_get_temp_dir())
             ->withConnection(); // No explicit connection and no config
 
         SliceRegistry::register($slice);

@@ -3,10 +3,10 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Test\Double;
 
-use FullSmack\LaravelSlice\Feature;
+use FullSmack\LaravelSlice\Extension;
 use FullSmack\LaravelSlice\Slice;
 
-final class FeatureFake implements Feature
+final class ExtensionFake implements Extension
 {
     public bool $registered = false;
     public ?Slice $receivedSlice = null;

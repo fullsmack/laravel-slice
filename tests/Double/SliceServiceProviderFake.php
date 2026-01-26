@@ -10,7 +10,6 @@ final class SliceServiceProviderFake extends SliceServiceProvider
 {
     private string $sliceName;
     private ?string $connection = null;
-    private ?string $basePath = null;
     private bool $useConnection = false;
 
     /** @var array<class-string> */
@@ -31,11 +30,6 @@ final class SliceServiceProviderFake extends SliceServiceProvider
         {
             $slice->withConnection($this->connection, $this->modelClasses);
         }
-
-        if ($this->basePath !== null)
-        {
-            $slice->setBasePath($this->basePath);
-        }
     }
 
     /**
@@ -46,13 +40,6 @@ final class SliceServiceProviderFake extends SliceServiceProvider
         $this->useConnection = true;
         $this->connection = $connection;
         $this->modelClasses = $models;
-
-        return $this;
-    }
-
-    public function withBasePath(string $path): static
-    {
-        $this->basePath = $path;
 
         return $this;
     }

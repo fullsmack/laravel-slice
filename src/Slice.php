@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice;
 
-use FullSmack\LaravelSlice\Feature;
+use FullSmack\LaravelSlice\Extension;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,8 +23,8 @@ class Slice
     /** @var array<class-string<Command>> */
     private array $commands = [];
 
-    /** @var array<Feature> */
-    private array $features = [];
+    /** @var array<Extension> */
+    private array $extensions = [];
 
     /** @var array<class-string<Model>> */
     private array $modelsToBind = [];
@@ -126,9 +126,9 @@ class Slice
         return $this;
     }
 
-    public function withFeature(Feature $feature): static
+    public function withExtension(Extension $extension): static
     {
-        $this->features[] = $feature;
+        $this->extensions[] = $extension;
 
         return $this;
     }
@@ -220,11 +220,11 @@ class Slice
     }
 
     /**
-     * @return array<Feature>
+     * @return array<Extension>
      */
-    public function features(): array
+    public function extensions(): array
     {
-        return $this->features;
+        return $this->extensions;
     }
 
     /**

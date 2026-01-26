@@ -119,7 +119,7 @@ src/your-slice-name/
 **Configuring a Slice**
 
 - `Slice` is the configuration object you receive in `configure(Slice $slice)`.
-- Common fluent methods: `setName()`, `useViews()`, `useTranslations()`, `useMigrations()`, `useRoutes()`, `withCommands()`, `withFeature()`, `withConnection()`.
+- Common fluent methods: `setName()`, `useViews()`, `useTranslations()`, `useMigrations()`, `useRoutes()`, `withCommands()`, `withExtension()`, `withConnection()`.
 
 Short example (minimal):
 
@@ -137,19 +137,19 @@ public function configure(Slice $slice): void
 }
 ```
 
-**Custom Features**
+**Custom Extensions**
 
-Features provide an extensibility mechanism for slices, allowing you to add custom functionality that integrates with the slice lifecycle. Features can be implemented by other packages or created directly in your application.
+Extensions provide an extensibility mechanism for slices, allowing you to add custom functionality that integrates with the slice lifecycle. Extensions can be implemented by other packages or created directly in your application.
 
-### Creating a Feature
+### Creating an Extension
 
-Implement the `Feature` interface:
+Implement the `Extension` interface:
 
 ```php
-use FullSmack\LaravelSlice\Feature;
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\Extension;
 
-final class CustomFeature implements Feature
+final class CustomExtension implements Extension
 {
     public function register(Slice $slice): void
     {
@@ -161,9 +161,9 @@ final class CustomFeature implements Feature
 }
 ```
 
-### Registering Features
+### Registering Extensions
 
-Add features to your slice configuration:
+Add extensions to your slice configuration:
 
 ```php
 use FullSmack\LaravelSlice\Slice;
@@ -174,8 +174,8 @@ final class OrderServiceProvider extends SliceServiceProvider
     public function configure(Slice $slice): void
     {
         $slice->setName('order')
-            ->withFeature(new CustomFeature())
-            ->withFeature(new AnotherFeature());
+            ->withExtension(new CustomExtension())
+            ->withExtension(new AnotherExtension());
     }
 }
 ```
