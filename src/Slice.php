@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Slice
 {
     protected string $name = '';
-    protected string $basePath;
+    protected string $path;
     protected string $baseNamespace;
 
     private bool $hasRoutes = false;
@@ -133,20 +133,33 @@ class Slice
         return $this;
     }
 
-    public function basePath(string $directory = null): string
+    public function path(?string $directory = null): string
     {
         if ($directory === null)
         {
-            return $this->basePath;
+            return $this->path;
         }
 
-        return $this->basePath . DIRECTORY_SEPARATOR .
+        return $this->path . DIRECTORY_SEPARATOR .
             ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
     }
 
-    public function setBasePath(string $path): static
+    public function sourcePath(?string $directory = null): string
     {
-        $this->basePath = $path;
+        $source = $this->path . DIRECTORY_SEPARATOR . 'src';
+
+        if ($directory === null)
+        {
+            return $source;
+        }
+
+        return $source . DIRECTORY_SEPARATOR .
+            ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
+    }
+
+    public function setPath(string $path): static
+    {
+        $this->path = $path;
 
         return $this;
     }
@@ -158,7 +171,7 @@ class Slice
         return $this;
     }
 
-    public function baseNamespace(string $subnamespace = null): string
+    public function baseNamespace(?string $subnamespace = null): string
     {
         if ($subnamespace === null)
         {
@@ -224,6 +237,6 @@ class Slice
 
     public function migrationPath(): string
     {
-        return $this->basePath('/../database/migrations');
+        return $this->path('database/migrations');
     }
 }

@@ -43,7 +43,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         $this->slice = $this->newSlice();
 
-        $this->slice->setBasePath($this->getSliceBaseDir());
+        $this->slice->setPath(dirname($this->getSliceBaseDir()));
 
         $this->slice->setBaseNamespace($this->getSliceBaseNamespace());
 
@@ -107,7 +107,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     protected function registerConfig(): void
     {
-        $configDirectory = $this->slice->basePath('/../config');
+        $configDirectory = $this->slice->path('config');
 
         if ($this->filesystem->isDirectory($configDirectory))
         {
@@ -131,7 +131,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     protected function registerRoutes(): void
     {
-        $routesDirectory = $this->slice->basePath('/../routes');
+        $routesDirectory = $this->slice->path('routes');
 
         if (!$this->filesystem->isDirectory($routesDirectory))
         {
@@ -147,13 +147,13 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     protected function registerTranslations(): void
     {
-        $slicePath = $this->slice->basePath('/..');
+        $slicePath = $this->slice->path();
 
         $hasLanguageDir = is_dir($slicePath .'/lang');
 
         $languagePath = $hasLanguageDir ? '/lang' : '/resources/lang';
 
-        $languageDirectory = $this->slice->basePath('/..'. $languagePath);
+        $languageDirectory = $this->slice->path($languagePath);
 
         if (!$this->filesystem->isDirectory($languageDirectory))
         {
@@ -167,7 +167,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     protected function registerViews(): void
     {
-        $viewDirectory = $this->slice->basePath('/../resources/views');
+        $viewDirectory = $this->slice->path('resources/views');
 
         if (!$this->filesystem->isDirectory($viewDirectory))
         {
@@ -183,7 +183,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     protected function registerMigrations(): void
     {
-        $migrationDirectory = $this->slice->basePath('/../database/migrations');
+        $migrationDirectory = $this->slice->path('database/migrations');
 
         if (!$this->filesystem->isDirectory($migrationDirectory))
         {
