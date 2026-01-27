@@ -28,6 +28,7 @@ class MigrateSlice extends MigrateCommand
         {--seed : Indicates if the seed task should be re-run}
         {--seeder= : The class name of the root seeder}
         {--step : Force the migrations to be run so they can be rolled back individually}
+        {--graceful : Return a successful exit code even if an error occurs}
         {--slice= : Run migrations for a specific slice}
         {--dir= : Subdirectory where the slice is located}';
 
@@ -125,6 +126,7 @@ class MigrateSlice extends MigrateCommand
                 '--seed' => $this->option('seed'),
                 '--seeder' => $this->option('seeder'),
                 '--step' => $this->option('step'),
+                '--graceful' => $this->option('graceful'),
             ],
             static fn (mixed $value): bool => $value !== null && $value !== false && $value !== '',
         );
