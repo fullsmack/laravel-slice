@@ -6,6 +6,7 @@ namespace FullSmack\LaravelSlice;
 use FullSmack\LaravelSlice\Extension;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class Slice
 {
@@ -181,6 +182,22 @@ class Slice
         return $this->baseNamespace .'\\'. $subnamespace;
     }
 
+    /**
+     * Get the path-derived namespace segments (without root prefix).
+     * Example: 'Web\Blog' for a slice with namespace 'Slice\Web\Blog'
+     */
+    public function namespaceBase(): string
+    {
+        $prefix = Str::studly(config('laravel-slice.root.namespace', 'slice'));
+
+        if (Str::startsWith($this->baseNamespace, $prefix . '\\'))
+        {
+            return Str::after($this->baseNamespace, $prefix . '\\');
+        }
+
+        return $this->baseNamespace;
+    }
+
     public function name(): string
     {
         return $this->name;
@@ -238,5 +255,23 @@ class Slice
     public function migrationPath(): string
     {
         return $this->path('database/migrations');
+    }
+
+    public function sourceFolder(): string
+    {
+        return 'src';
+    }
+
+    /**
+     * Get the slice path relative to the project root.
+     * Example: 'src/api/posts' for a slice at /var/www/project/src/api/posts
+     */
+    public function projectPath(): string
+    {
+        $basePath = base_path();
+
+        $relativePath = str_replace($basePath . DIRECTORY_SEPARATOR, '', $this->path);
+
+        return str_replace('\\', '/', $relativePath);
     }
 }

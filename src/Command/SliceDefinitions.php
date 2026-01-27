@@ -8,38 +8,61 @@ use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceRegistry;
 
 /**
+ * Provides slice context for runtime make commands.
+ *
+ * This trait handles resolving slice context from the --slice option,
+ * loading from the registry, and providing getter methods for paths/namespaces.
+ *
+ * For slice creation (make:slice), also use SliceMakeDefinitions trait.
+ *
  * @phpstan-require-extends \Illuminate\Console\Command
  */
 trait SliceDefinitions
 {
+    /**
+     * Unique slice identifier (e.g., 'api.posts')
+     *
+     * @var string|null
+     */
     private ?string $sliceName = null;
+
+    /**
+     * Kebab-case folder name (e.g., 'posts')
+     *
+     * @var string
+     */
     private string $sliceFolderName;
+
+    /**
+     * Absolute filesystem path to slice root
+     *
+     * @var string
+     */
     private string $slicePath;
-    private string $sliceFullPath;
-    private string $sliceRootFolder;
-    private string $sliceNamespaceBase;
-    private string $sliceTestFolder;
-    private string $testNamespaceBase;
+
+    /**
+     * Full PSR-4 namespace (e.g., 'Slice\Api\Blog')
+     *
+     * @var string
+     */
     private string $sliceNamespace;
+
+    /**
+     * Full test namespace (e.g., 'Test\Api\Blog')
+     *
+     * @var string
+     */
     private string $sliceTestNamespace;
 
-    private function defineSliceUsingArgument(): void
-    {
-        $sliceName = $this->argument('sliceName');
+    // =========================================================================
+    // Entry Point
+    // =========================================================================
 
-        if (!$sliceName)
-        {
-            $this->error('Please provide a slice name as the first argument.');
-
-            return;
-        }
-
-        $dirOption = method_exists($this, 'option') ? $this->option('dir') : null;
-
-        $this->defineSlice($sliceName, $dirOption);
-    }
-
-    private function defineSliceUsingOption(): void
+    /**
+     * Resolve slice from --slice option.
+     * Loads from registry if slice exists, otherwise throws error.
+     */
+    private function resolveSliceFromOption(): void
     {
         $sliceName = $this->option('slice');
 
@@ -48,141 +71,148 @@ trait SliceDefinitions
             return;
         }
 
-        // Try to get slice from registry first (for existing slices)
-        if (SliceRegistry::has($sliceName))
+        if (!SliceRegistry::has($sliceName))
         {
-            $this->defineSliceFromRegistry($sliceName);
+            $this->error("Slice \"{$sliceName}\" is not registered. Create it first with make:slice.");
+
+            return;
         }
-        else
+
+        $this->loadFromRegistry($sliceName);
+    }
+
+    // =========================================================================
+    // Internal Methods
+    // =========================================================================
+
+    /**
+     * Load slice properties from the registry.
+     */
+    private function loadFromRegistry(string $sliceName): void
+    {
+        $slice = SliceRegistry::get($sliceName);
+
+        $this->sliceName = $slice->name();
+        $this->slicePath = $slice->path();
+        $this->sliceFolderName = basename($this->slicePath);
+        $this->sliceNamespace = $slice->baseNamespace();
+
+        $this->sliceTestNamespace = $this->resolveTestNamespace($slice->namespaceBase());
+    }
+
+    // =========================================================================
+    // Slice-Mirrored Getter Methods
+    // =========================================================================
+
+    /**
+     * Get the absolute path to the slice root, optionally with a subdirectory.
+     * Mirrors Slice::path()
+     */
+    protected function slicePath(?string $directory = null): string
+    {
+        if ($directory === null)
         {
-            // Fallback to path-based definition for slice creation commands
-            $this->defineSlice($sliceName);
+            return $this->slicePath;
         }
+
+        return $this->slicePath . DIRECTORY_SEPARATOR .
+            ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
     }
 
     /**
-     * Validate and normalize the slice identifier (name or path).
-     * Ensures forward slashes are used and warns if backslashes are detected.
+     * Get the path to the slice's source folder, optionally with a subdirectory.
+     * Mirrors Slice::sourcePath()
      */
-    private function validateSliceIdentifier(string $identifier): string
+    protected function sliceSourcePath(?string $directory = null): string
     {
-        if (str_contains($identifier, '\\'))
+        $source = $this->slicePath . DIRECTORY_SEPARATOR . 'src';
+
+        if ($directory === null)
         {
-            $this->warn("Please use forward slashes (/) instead of backslashes (\\) in slice paths.");
-            $identifier = str_replace('\\', '/', $identifier);
+            return $source;
         }
 
-        return trim($identifier, '/');
+        return $source . DIRECTORY_SEPARATOR .
+            ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
     }
 
     /**
-     * Parse the slice identifier to extract subdirectory path and slice name.
-     * Handles both slash notation (api/posts) and dot notation (api.posts).
-     * Returns [subdirectoryPath, sliceName]
+     * Get the path to the slice's migrations folder.
+     * Mirrors Slice::migrationPath()
      */
-    private function parseSliceIdentifier(string $identifier): array
+    protected function sliceMigrationPath(): string
     {
-        $identifier = $this->validateSliceIdentifier($identifier);
-
-        // Convert dot notation to slash notation (api.posts -> api/posts)
-        // Only if there are no slashes already present
-        if (!str_contains($identifier, '/') && str_contains($identifier, '.'))
-        {
-            $identifier = str_replace('.', '/', $identifier);
-        }
-
-        $segments = explode('/', $identifier);
-        $sliceName = array_pop($segments);
-        $subdirectoryPath = implode('/', $segments);
-
-        return [$subdirectoryPath, $sliceName];
+        return $this->slicePath('database/migrations');
     }
 
     /**
-     * Build the slice namespace based on config and subdirectory path.
+     * Get the internal source folder name (always 'src').
+     * Mirrors Slice::sourceFolder()
      */
-    private function buildSliceNamespace(string $subdirectoryPath, ?string $dirOption = null): string
+    protected function sliceSourceFolder(): string
     {
-        $config = config('laravel-slice');
-        $namespaceMode = $config['root']['namespace-mode'] ?? 'prefix';
-        $rootNamespace = Str::studly($config['root']['namespace']);
-
-        // Combine dirOption and subdirectoryPath
-        $fullSubdirectory = $dirOption
-            ? ($subdirectoryPath ? "$dirOption/$subdirectoryPath" : $dirOption)
-            : $subdirectoryPath;
-
-        $pathSegments = $fullSubdirectory
-            ? array_map([Str::class, 'studly'], explode('/', $fullSubdirectory))
-            : [];
-
-        if ($namespaceMode === 'fallback' && !empty($pathSegments))
-        {
-            // Use path-based namespace only, no root namespace prepended
-            return implode('\\', $pathSegments);
-        }
-
-        // 'prefix' mode or no path: always use root namespace
-        if (empty($pathSegments))
-        {
-            return $rootNamespace;
-        }
-
-        return $rootNamespace . '\\' . implode('\\', $pathSegments);
+        return 'src';
     }
 
-    private function defineSlice(string $sliceName, ?string $dirOption = null): void
+    /**
+     * Get the slice namespace, optionally with a sub-namespace.
+     * Mirrors Slice::baseNamespace()
+     */
+    protected function sliceNamespace(?string $subnamespace = null): string
     {
-        $config = config('laravel-slice');
+        if ($subnamespace === null)
+        {
+            return $this->sliceNamespace;
+        }
 
-        [$subdirectoryPath, $actualSliceName] = $this->parseSliceIdentifier($sliceName);
-
-        $this->sliceFolderName = Str::kebab($actualSliceName);
-        $this->sliceRootFolder = Str::lower($config['root']['folder']);
-
-        // Combine dirOption and subdirectoryPath for full path
-        $fullSubdirectory = $dirOption
-            ? ($subdirectoryPath ? "$dirOption/$subdirectoryPath" : $dirOption)
-            : $subdirectoryPath;
-
-        // Build the full path identifier for registry (e.g., "api/pizza")
-        $this->sliceFullPath = $fullSubdirectory
-            ? $fullSubdirectory . '/' . $this->sliceFolderName
-            : $this->sliceFolderName;
-
-        // Build the full slice name with dot notation (e.g., "api.posts")
-        $this->sliceName = $fullSubdirectory
-            ? str_replace('/', '.', $this->sliceFullPath)
-            : $this->sliceFolderName;
-
-        // Build filesystem path
-        $this->slicePath = $fullSubdirectory
-            ? base_path("{$this->sliceRootFolder}/{$fullSubdirectory}/{$this->sliceFolderName}")
-            : base_path("{$this->sliceRootFolder}/{$this->sliceFolderName}");
-
-        $this->sliceNamespaceBase = $this->buildSliceNamespace($subdirectoryPath, $dirOption);
-
-        // Build test namespace base to mirror slice namespace structure
-        $config = config('laravel-slice');
-        $testRootNamespace = Str::studly($config['test']['namespace']);
-        $pathSegments = $fullSubdirectory
-            ? array_map([Str::class, 'studly'], explode('/', $fullSubdirectory))
-            : [];
-
-        $this->testNamespaceBase = empty($pathSegments)
-            ? $testRootNamespace
-            : $testRootNamespace . '\\' . implode('\\', $pathSegments);
-
-        // Compute full namespaces
-        $this->sliceNamespace = $this->sliceNamespaceBase . '\\' . Str::studly($this->sliceFolderName);
-        $this->sliceTestNamespace = $this->testNamespaceBase . '\\' . Str::studly($this->sliceFolderName);
+        return $this->sliceNamespace . '\\' . $subnamespace;
     }
 
+    /**
+     * Get the test namespace, optionally with a sub-namespace.
+     */
+    protected function sliceTestNamespace(?string $subnamespace = null): string
+    {
+        if ($subnamespace === null)
+        {
+            return $this->sliceTestNamespace;
+        }
+
+        return $this->sliceTestNamespace . '\\' . $subnamespace;
+    }
+
+    /**
+     * Get the project-relative path to the slice root.
+     * Example: 'src/api/posts' when slicePath is '/var/www/project/src/api/posts'
+     */
+    protected function sliceProjectPath(): string
+    {
+        $basePath = $this->laravel->basePath();
+
+        // Remove base path prefix and normalize separators
+        $relativePath = str_replace($basePath, '', $this->slicePath);
+        $relativePath = ltrim($relativePath, DIRECTORY_SEPARATOR);
+        $relativePath = ltrim($relativePath, '/');
+
+        // Normalize to forward slashes for consistency
+        return str_replace('\\', '/', $relativePath);
+    }
+
+    // =========================================================================
+    // State & Registry Methods
+    // =========================================================================
+
+    /**
+     * Check if currently operating in slice context.
+     */
     private function runInSlice(): bool
     {
-        return isset($this->sliceName) && $this->sliceName;
+        return isset($this->sliceName);
     }
 
+    /**
+     * Get the registered Slice object if available.
+     */
     private function getRegisteredSlice(): ?Slice
     {
         if (!$this->runInSlice())
@@ -198,6 +228,9 @@ trait SliceDefinitions
         return SliceRegistry::get($this->sliceName);
     }
 
+    /**
+     * Check if the slice uses a custom database connection.
+     */
     private function sliceUsesConnection(): bool
     {
         $slice = $this->getRegisteredSlice();
@@ -205,6 +238,9 @@ trait SliceDefinitions
         return $slice !== null && $slice->usesConnection();
     }
 
+    /**
+     * Get the slice's database connection name.
+     */
     private function getSliceConnection(): ?string
     {
         $slice = $this->getRegisteredSlice();
@@ -212,29 +248,49 @@ trait SliceDefinitions
         return $slice?->connection();
     }
 
+    // =========================================================================
+    // Override Methods (for Laravel generator commands)
+    // =========================================================================
+
     /**
+     * Get the root namespace for class generation.
+     *
      * @return string
      */
     protected function rootNamespace()
     {
+        if (!$this->runInSlice())
+        {
+            /** @phpstan-ignore return.type, staticMethod.notFound */
+            return parent::rootNamespace();
+        }
+
         return $this->sliceNamespace . '\\';
     }
 
     /**
+     * Get the destination path for generated classes.
+     *
      * @param string $name
      * @return string
      */
     protected function getPath($name)
     {
+        if (!$this->runInSlice())
+        {
+            /** @phpstan-ignore staticMethod.notFound */
+            return parent::getPath($name);
+        }
+
         $name = Str::replaceFirst($this->rootNamespace(), '', $name);
 
-        return $this->slicePath .'/src/'. str_replace('\\', '/', $name) .'.php';
+        return $this->sliceSourcePath(str_replace('\\', '/', $name) . '.php');
     }
 
     /**
-     * Get the first view directory path from the application configuration.
+     * Get the view directory path for the slice.
      *
-     * @param  string  $path
+     * @param string $path
      * @return string
      */
     protected function viewPath($path = '')
@@ -245,8 +301,63 @@ trait SliceDefinitions
             return parent::viewPath($path);
         }
 
-        $views = $this->slicePath.'/resources/views';
+        $views = $this->slicePath . DIRECTORY_SEPARATOR . 'resources' . DIRECTORY_SEPARATOR . 'views';
 
-        return $views.($path ? DIRECTORY_SEPARATOR.$path : $path);
+        return $views . ($path ? DIRECTORY_SEPARATOR . $path : $path);
+    }
+
+    // =========================================================================
+    // Private Helper Methods
+    // =========================================================================
+
+    /**
+     * Resolve the test namespace from the namespace base.
+     *
+     * Currently uses prefix mode: Test\{namespaceBase}
+     * Future: Could read from config for different strategies.
+     */
+    private function resolveTestNamespace(string $namespaceBase): string
+    {
+        $testPrefix = Str::studly(config('laravel-slice.test.namespace', 'test'));
+
+        return $testPrefix . '\\' . $namespaceBase;
+    }
+
+    /**
+     * Validate and normalize the slice identifier.
+     */
+    private function validateSliceIdentifier(string $identifier): string
+    {
+        if (str_contains($identifier, '\\'))
+        {
+            $this->warn("Please use forward slashes (/) instead of backslashes (\\) in slice paths.");
+
+            $identifier = str_replace('\\', '/', $identifier);
+        }
+
+        return trim($identifier, '/');
+    }
+
+    /**
+     * Parse the slice identifier to extract subdirectory path and slice name.
+     * Handles both slash notation (api/posts) and dot notation (api.posts).
+     *
+     * @return array{0: string, 1: string} [subdirectoryPath, sliceName]
+     */
+    private function parseSliceIdentifier(string $identifier): array
+    {
+        $identifier = $this->validateSliceIdentifier($identifier);
+
+        // Convert dot notation to slash notation if no slashes present
+        if (!str_contains($identifier, '/') && str_contains($identifier, '.'))
+        {
+            $identifier = str_replace('.', '/', $identifier);
+        }
+
+        $segments = explode('/', $identifier);
+        $sliceName = array_pop($segments);
+        $subdirectoryPath = implode('/', $segments);
+
+        return [$subdirectoryPath, $sliceName];
     }
 }

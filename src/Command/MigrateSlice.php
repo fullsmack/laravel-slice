@@ -44,7 +44,7 @@ class MigrateSlice extends MigrateCommand
      */
     public function handle()
     {
-        $this->defineSliceUsingOption();
+        $this->resolveSliceFromOption();
 
         if (!$this->runInSlice())
         {
@@ -65,13 +65,13 @@ class MigrateSlice extends MigrateCommand
             return 1;
         }
 
-        if (!File::exists($this->slicePath))
+        if (!File::exists($this->slicePath()))
         {
-            $this->error("Slice '{$this->sliceName}' does not exist at path: {$this->slicePath}");
+            $this->error("Slice '{$this->sliceName}' does not exist at path: {$this->slicePath()}");
             return 1;
         }
 
-        $migrationPath = $this->slicePath . '/database/migrations';
+        $migrationPath = $this->sliceMigrationPath();
 
         if (!File::exists($migrationPath))
         {

@@ -6,7 +6,7 @@ return [
         'namespace' => 'slice',
         /**
          * Namespace mode determines how the root namespace is applied:
-         * - 'prefix': Always prepend root namespace (e.g., Module\Api\SliceName)
+         * - 'prefix': Always prepend root namespace (e.g., Slice\Api\SliceName)
          * - 'fallback': Only use root namespace when no path/dir is provided (e.g., Api\SliceName when path is specified)
          */
         'namespace-mode' => 'prefix',

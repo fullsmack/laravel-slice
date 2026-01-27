@@ -26,7 +26,7 @@ class MakeTest extends TestMakeCommand
      */
     public function handle()
     {
-        $this->defineSliceUsingOption();
+        $this->resolveSliceFromOption();
 
         return parent::handle();
     }
@@ -39,15 +39,15 @@ class MakeTest extends TestMakeCommand
      */
     protected function getPath($name)
     {
-        if (!$this->sliceName)
+        if (!$this->runInSlice())
         {
             return parent::getPath($name);
         }
 
         $name = Str::replaceFirst($this->rootNamespace(), '', $name);
 
-        return "{$this->slicePath}/tests".
-            str_replace('\\', '/', $name).'.php';
+        return $this->slicePath('tests') . DIRECTORY_SEPARATOR .
+            str_replace('\\', '/', $name) . '.php';
     }
 
     /**
@@ -66,12 +66,12 @@ class MakeTest extends TestMakeCommand
      */
     protected function rootNamespace()
     {
-        if (!isset($this->sliceName))
+        if (!$this->runInSlice())
         {
             return parent::rootNamespace();
         }
 
-        return $this->sliceTestNamespace;
+        return $this->sliceTestNamespace();
     }
 
     /**

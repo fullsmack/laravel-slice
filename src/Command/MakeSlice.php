@@ -8,10 +8,12 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 use FullSmack\LaravelSlice\Command\SliceDefinitions;
+use FullSmack\LaravelSlice\Command\SliceMakeDefinitions;
 
 class MakeSlice extends Command
 {
     use SliceDefinitions;
+    use SliceMakeDefinitions;
 
     /**
      * @var string
@@ -33,9 +35,9 @@ class MakeSlice extends Command
      */
     public function handle()
     {
-        $this->defineSliceUsingArgument();
+        $this->resolveSliceFromArgument();
 
-        if (File::exists($this->slicePath))
+        if (File::exists($this->slicePath()))
         {
             $this->error("Slice with name \"{$this->sliceName}\" already exists");
 
@@ -53,7 +55,7 @@ class MakeSlice extends Command
 
         foreach ($directories as $directory)
         {
-            File::makeDirectory("{$this->slicePath}/$directory", 0755, true, true);
+            File::makeDirectory($this->slicePath($directory), 0755, true, true);
         }
 
         $slicePascalName = Str::studly($this->sliceFolderName);
@@ -63,12 +65,12 @@ class MakeSlice extends Command
         $serviceProviderContent = File::get($stubPath);
 
         $serviceProviderContent = Str::replace(
-            ['{{sliceRootNamespace}}','{{slicePascalName}}', '{{sliceName}}', '{{sliceFullPath}}'],
-            [$this->sliceNamespaceBase, $slicePascalName, $this->sliceName, $this->sliceFullPath],
+            ['{{sliceRootNamespace}}', '{{slicePascalName}}', '{{sliceName}}'],
+            [$this->sliceNamespaceBase(), $slicePascalName, $this->sliceName],
             $serviceProviderContent
         );
 
-        $serviceProviderPath = "{$this->slicePath}/src/{$slicePascalName}ServiceProvider.php";
+        $serviceProviderPath = $this->sliceSourcePath("{$slicePascalName}ServiceProvider.php");
 
         File::put($serviceProviderPath, $serviceProviderContent);
 
@@ -87,13 +89,13 @@ class MakeSlice extends Command
 
         $slicePascalName = Str::studly($this->sliceFolderName);
 
-        // Use sliceFullPath for filesystem path (e.g., "api/pizza")
-        $sliceRoot = "{$this->sliceRootFolder}/{$this->sliceFullPath}";
+        // Use sliceProjectPath for filesystem path (e.g., "src/api/posts")
+        $sliceRoot = $this->sliceProjectPath();
 
         // Build namespace with full path consideration
-        $namespace = "{$this->sliceNamespaceBase}\\{$slicePascalName}";
+        $namespace = $this->sliceNamespace();
 
-        $testNamespace = "{$this->testNamespaceBase}\\{$slicePascalName}";
+        $testNamespace = $this->sliceTestNamespace();
 
         // Update autoload section
         if (!isset($composerData['autoload']['psr-4'][$namespace . '\\']))

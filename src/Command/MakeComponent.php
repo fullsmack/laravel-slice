@@ -25,7 +25,7 @@ class MakeComponent extends ComponentMakeCommand
      */
     public function handle()
     {
-        $this->defineSliceUsingOption();
+        $this->resolveSliceFromOption();
 
         parent::handle();
     }
@@ -40,7 +40,7 @@ class MakeComponent extends ComponentMakeCommand
     {
         if ($this->option('inline') || !$this->runInSlice())
         {
-            parent::buildClass($name);
+            return parent::buildClass($name);
         }
 
         return str_replace(

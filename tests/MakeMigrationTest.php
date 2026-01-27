@@ -61,7 +61,10 @@ final class MakeMigrationTest extends TestCase
     #[Test]
     public function it_uses_custom_stubs_when_creating_migration_for_slice(): void
     {
-        $slice = new Slice($this->testSliceName, $this->testSlicePath);
+        $slice = (new Slice())
+            ->setName($this->testSliceName)
+            ->setPath($this->testSlicePath)
+            ->setBaseNamespace('Slice\\TestSlice');
 
         SliceRegistry::register($slice);
 
@@ -111,7 +114,10 @@ final class MakeMigrationTest extends TestCase
     #[Test]
     public function it_includes_connection_placeholder_in_slice_migrations(): void
     {
-        $slice = new Slice($this->testSliceName, $this->testSlicePath);
+        $slice = (new Slice())
+            ->setName($this->testSliceName)
+            ->setPath($this->testSlicePath)
+            ->setBaseNamespace('Slice\\TestSlice');
 
         SliceRegistry::register($slice);
 
@@ -135,7 +141,10 @@ final class MakeMigrationTest extends TestCase
     #[Test]
     public function it_uses_table_option_correctly_in_slice_migrations(): void
     {
-        $slice = new Slice($this->testSliceName, $this->testSlicePath);
+        $slice = (new Slice())
+            ->setName($this->testSliceName)
+            ->setPath($this->testSlicePath)
+            ->setBaseNamespace('Slice\\TestSlice');
 
         SliceRegistry::register($slice);
 

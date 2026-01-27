@@ -41,11 +41,15 @@ class MakeMigration extends MigrateMakeCommand
             return;
         }
 
-        $this->defineSliceUsingOption();
+        $this->resolveSliceFromOption();
 
-        $migrationsPath = "{$this->slicePath}/database/migrations";
+        if (!$this->runInSlice())
+        {
+            // Slice not found in registry, error already shown
+            return;
+        }
 
-        $this->input->setOption('path', $migrationsPath);
+        $this->input->setOption('path', $this->sliceMigrationPath());
         $this->input->setOption('realpath', true);
 
         parent::handle();
