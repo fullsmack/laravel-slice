@@ -14,6 +14,7 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
+
         SliceRegistry::clear();
     }
 

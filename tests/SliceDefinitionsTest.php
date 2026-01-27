@@ -30,7 +30,8 @@ final class SliceDefinitionsTest extends TestCase
 
     protected function tearDown(): void
     {
-        if (File::exists($this->testSlicePath)) {
+        if (File::exists($this->testSlicePath))
+        {
             File::deleteDirectory($this->testSlicePath);
         }
 
@@ -61,33 +62,40 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {--slice=}';
 
-            public function handle() {
+            public function handle()
+            {
                 $this->resolveSliceFromOption();
                 return 0;
             }
 
             // Expose private properties for testing
-            public function getSliceName(): ?string {
+            public function getSliceName(): ?string
+            {
                 return $this->sliceName ?? null;
             }
 
-            public function getSlicePath(): ?string {
+            public function getSlicePath(): ?string
+            {
                 return $this->slicePath ?? null;
             }
 
-            public function getSliceFolderName(): ?string {
+            public function getSliceFolderName(): ?string
+            {
                 return $this->sliceFolderName ?? null;
             }
 
-            public function getSliceNamespace(): ?string {
+            public function getSliceNamespace(): ?string
+            {
                 return $this->sliceNamespace ?? null;
             }
 
-            public function getSliceTestNamespace(): ?string {
+            public function getSliceTestNamespace(): ?string
+            {
                 return $this->sliceTestNamespace ?? null;
             }
 
-            public function isRunInSlice(): bool {
+            public function isRunInSlice(): bool
+            {
                 return $this->runInSlice();
             }
         };
@@ -113,20 +121,24 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {sliceName} {--dir=}';
 
-            public function handle() {
+            public function handle()
+            {
                 $this->defineSliceFromArgument();
                 return 0;
             }
 
-            public function getSliceName(): ?string {
+            public function getSliceName(): ?string
+            {
                 return $this->sliceName ?? null;
             }
 
-            public function getSlicePath(): ?string {
+            public function getSlicePath(): ?string
+            {
                 return $this->slicePath ?? null;
             }
 
-            public function isRunInSlice(): bool {
+            public function isRunInSlice(): bool
+            {
                 return $this->runInSlice();
             }
         };
@@ -149,12 +161,15 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {sliceName} {--dir=}';
 
-            public function handle() {
+            public function handle()
+            {
                 $this->defineSliceFromArgument();
+
                 return 0;
             }
 
-            public function getSliceName(): ?string {
+            public function getSliceName(): ?string
+            {
                 return $this->sliceName ?? null;
             }
         };
@@ -179,16 +194,19 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {sliceName} {--dir=}';
 
-            public function handle() {
+            public function handle()
+            {
                 $this->defineSliceFromArgument();
                 return 0;
             }
 
-            public function getSliceName(): ?string {
+            public function getSliceName(): ?string
+            {
                 return $this->sliceName ?? null;
             }
 
-            public function getSliceProjectPath(): ?string {
+            public function getSliceProjectPath(): ?string
+            {
                 return $this->sliceProjectPath();
             }
         };
@@ -211,16 +229,19 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {sliceName} {--dir=}';
 
-            public function handle() {
+            public function handle()
+            {
                 $this->defineSliceFromArgument();
                 return 0;
             }
 
-            public function getSliceName(): ?string {
+            public function getSliceName(): ?string
+            {
                 return $this->sliceName ?? null;
             }
 
-            public function getSliceProjectPath(): ?string {
+            public function getSliceProjectPath(): ?string
+            {
                 return $this->sliceProjectPath();
             }
         };
@@ -242,16 +263,19 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {--slice=}';
 
-            public function handle() {
+            public function handle()
+            {
                 $this->resolveSliceFromOption();
                 return 0;
             }
 
-            public function getSliceName(): ?string {
+            public function getSliceName(): ?string
+            {
                 return $this->sliceName ?? null;
             }
 
-            public function isRunInSlice(): bool {
+            public function isRunInSlice(): bool
+            {
                 return $this->runInSlice();
             }
         };
@@ -281,16 +305,19 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {--slice=}';
 
-            public function handle() {
+            public function handle()
+            {
                 $this->resolveSliceFromOption();
                 return 0;
             }
 
-            public function checkUsesConnection(): bool {
+            public function checkUsesConnection(): bool
+            {
                 return $this->sliceUsesConnection();
             }
 
-            public function getConnection(): ?string {
+            public function getConnection(): ?string
+            {
                 return $this->sliceConnection();
             }
         };
@@ -319,16 +346,19 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {--slice=}';
 
-            public function handle() {
+            public function handle()
+            {
                 $this->resolveSliceFromOption();
                 return 0;
             }
 
-            public function checkUsesConnection(): bool {
+            public function checkUsesConnection(): bool
+            {
                 return $this->sliceUsesConnection();
             }
 
-            public function getConnection(): ?string {
+            public function getConnection(): ?string
+            {
                 return $this->sliceConnection();
             }
         };
@@ -456,23 +486,28 @@ final class SliceDefinitionsTest extends TestCase
                 return 0;
             }
 
-            public function getSliceName(): ?string {
+            public function getSliceName(): ?string
+            {
                 return $this->sliceName ?? null;
             }
 
-            public function getSlicePath(): ?string {
+            public function getSlicePath(): ?string
+            {
                 return $this->slicePath ?? null;
             }
 
-            public function getSliceFolderName(): ?string {
+            public function getSliceFolderName(): ?string
+            {
                 return $this->sliceFolderName ?? null;
             }
 
-            public function getSliceNamespace(): ?string {
+            public function getSliceNamespace(): ?string
+            {
                 return $this->sliceNamespace ?? null;
             }
 
-            public function getSliceTestNamespace(): ?string {
+            public function getSliceTestNamespace(): ?string
+            {
                 return $this->sliceTestNamespace ?? null;
             }
 
@@ -587,19 +622,23 @@ final class SliceDefinitionsTest extends TestCase
                 return 0;
             }
 
-            public function getSliceName(): ?string {
+            public function getSliceName(): ?string
+            {
                 return $this->sliceName ?? null;
             }
 
-            public function getSlicePath(): ?string {
+            public function getSlicePath(): ?string
+            {
                 return $this->slicePath ?? null;
             }
 
-            public function getSliceNamespace(): ?string {
+            public function getSliceNamespace(): ?string
+            {
                 return $this->sliceNamespace ?? null;
             }
 
-            public function getSliceTestNamespace(): ?string {
+            public function getSliceTestNamespace(): ?string
+            {
                 return $this->sliceTestNamespace ?? null;
             }
 
@@ -725,23 +764,28 @@ final class SliceDefinitionsTest extends TestCase
                 return 0;
             }
 
-            public function getSliceName(): ?string {
+            public function getSliceName(): ?string
+            {
                 return $this->sliceName ?? null;
             }
 
-            public function getSlicePath(): ?string {
+            public function getSlicePath(): ?string
+            {
                 return $this->slicePath ?? null;
             }
 
-            public function getSliceFolderName(): ?string {
+            public function getSliceFolderName(): ?string
+            {
                 return $this->sliceFolderName ?? null;
             }
 
-            public function getSliceNamespace(): ?string {
+            public function getSliceNamespace(): ?string
+            {
                 return $this->sliceNamespace ?? null;
             }
 
-            public function getSliceTestNamespace(): ?string {
+            public function getSliceTestNamespace(): ?string
+            {
                 return $this->sliceTestNamespace ?? null;
             }
 
