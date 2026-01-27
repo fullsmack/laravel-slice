@@ -137,6 +137,6 @@ class MigrateSlice extends MigrateCommand
             $this->line("Using database connection: {$connection}");
         }
 
-        return Artisan::call(MigrateCommand::class, $params);
+        return Artisan::call(MigrateCommand::class, $params, $this->output);
     }
 }
