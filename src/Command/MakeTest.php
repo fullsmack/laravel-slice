@@ -6,6 +6,7 @@ namespace FullSmack\LaravelSlice\Command;
 use Illuminate\Foundation\Console\TestMakeCommand;
 use Symfony\Component\Console\Input\InputOption;
 use Illuminate\Support\Str;
+use FullSmack\LaravelSlice\Path;
 
 class MakeTest extends TestMakeCommand
 {
@@ -47,7 +48,7 @@ class MakeTest extends TestMakeCommand
         $name = Str::replaceFirst($this->rootNamespace(), '', $name);
 
         return $this->slicePath('tests') . DIRECTORY_SEPARATOR .
-            str_replace('\\', '/', $name) . '.php';
+            Path::normalize($name) . '.php';
     }
 
     /**

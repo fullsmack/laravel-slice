@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice;
 
 use FullSmack\LaravelSlice\Extension;
+use FullSmack\LaravelSlice\Path;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -141,21 +142,19 @@ class Slice
             return $this->path;
         }
 
-        return $this->path . DIRECTORY_SEPARATOR .
-            ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
+        return Path::join($this->path, $directory);
     }
 
     public function sourcePath(?string $directory = null): string
     {
-        $source = $this->path . DIRECTORY_SEPARATOR . 'src';
+        $source = Path::join($this->path, 'src');
 
         if ($directory === null)
         {
             return $source;
         }
 
-        return $source . DIRECTORY_SEPARATOR .
-            ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
+        return Path::join($source, $directory);
     }
 
     public function setPath(string $path): static
@@ -268,10 +267,6 @@ class Slice
      */
     public function projectPath(): string
     {
-        $basePath = base_path();
-
-        $relativePath = str_replace($basePath . DIRECTORY_SEPARATOR, '', $this->path);
-
-        return str_replace('\\', '/', $relativePath);
+        return Path::normalize(Path::relative(base_path(), $this->path));
     }
 }

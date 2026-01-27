@@ -6,6 +6,7 @@ namespace FullSmack\LaravelSlice\Command;
 use Illuminate\Support\Str;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceRegistry;
+use FullSmack\LaravelSlice\Path;
 
 /**
  * Provides slice context for runtime make commands.
@@ -97,8 +98,7 @@ trait SliceDefinitions
             return $this->slicePath;
         }
 
-        return $this->slicePath . DIRECTORY_SEPARATOR .
-            $this->trimDirectoryParameter($directory);
+        return Path::join($this->slicePath, $directory);
     }
 
     /**
@@ -110,8 +110,7 @@ trait SliceDefinitions
 
         $directory = !$directory
             ? $sourceDirectory
-            : $sourceDirectory . DIRECTORY_SEPARATOR .
-                $this->trimDirectoryParameter($directory);
+            : Path::join($sourceDirectory, $directory);
 
         return $this->slicePath($directory);
     }
@@ -164,15 +163,7 @@ trait SliceDefinitions
      */
     protected function sliceProjectPath(): string
     {
-        $basePath = $this->laravel->basePath();
-
-        // Remove base path prefix and normalize separators
-        $relativePath = str_replace($basePath, '', $this->slicePath);
-        $relativePath = ltrim($relativePath, DIRECTORY_SEPARATOR);
-        $relativePath = ltrim($relativePath, '/');
-
-        // Normalize to forward slashes for consistency
-        return str_replace('\\', '/', $relativePath);
+        return Path::normalize(Path::relative($this->laravel->basePath(), $this->slicePath));
     }
 
     private function runInSlice(): bool
@@ -275,11 +266,6 @@ trait SliceDefinitions
         return SliceRegistry::get($this->sliceName);
     }
 
-    private function trimDirectoryParameter(?string $directory = null): string
-    {
-        return ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
-    }
-
     /**
      * Resolve the test namespace from the namespace base.
      *
@@ -302,7 +288,7 @@ trait SliceDefinitions
         {
             $this->warn("Please use forward slashes (/) instead of backslashes (\\) in slice paths.");
 
-            $identifier = str_replace('\\', '/', $identifier);
+            $identifier = Path::normalize($identifier);
         }
 
         return trim($identifier, '/');
