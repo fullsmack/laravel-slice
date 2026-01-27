@@ -64,7 +64,7 @@ final class MakeMigrationTest extends TestCase
         $slice = (new Slice())
             ->setName($this->testSliceName)
             ->setPath($this->testSlicePath)
-            ->setBaseNamespace('Slice\\TestSlice');
+            ->setNamespace('Slice\\TestSlice');
 
         SliceRegistry::register($slice);
 
@@ -117,7 +117,7 @@ final class MakeMigrationTest extends TestCase
         $slice = (new Slice())
             ->setName($this->testSliceName)
             ->setPath($this->testSlicePath)
-            ->setBaseNamespace('Slice\\TestSlice');
+            ->setNamespace('Slice\\TestSlice');
 
         SliceRegistry::register($slice);
 
@@ -144,7 +144,7 @@ final class MakeMigrationTest extends TestCase
         $slice = (new Slice())
             ->setName($this->testSliceName)
             ->setPath($this->testSlicePath)
-            ->setBaseNamespace('Slice\\TestSlice');
+            ->setNamespace('Slice\\TestSlice');
 
         SliceRegistry::register($slice);
 

@@ -35,7 +35,7 @@ class MakeSlice extends Command
      */
     public function handle()
     {
-        $this->resolveSliceFromArgument();
+        $this->defineSliceFromArgument();
 
         if (File::exists($this->slicePath()))
         {

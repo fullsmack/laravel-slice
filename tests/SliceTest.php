@@ -145,21 +145,21 @@ final class SliceTest extends TestCase
     {
         $namespace = 'Module\\TestSlice';
 
-        $result = $this->slice->setBaseNamespace($namespace);
+        $result = $this->slice->setNamespace($namespace);
 
         $this->assertSame($this->slice, $result);
-        $this->assertSame($namespace, $this->slice->baseNamespace());
+        $this->assertSame($namespace, $this->slice->namespace());
     }
 
     #[Test]
     public function it_gets_base_namespace_with_subnamespace(): void
     {
-        $baseNamespace = 'Module\\TestSlice';
-        $this->slice->setBaseNamespace($baseNamespace);
+        $namespace = 'Module\\TestSlice';
+        $this->slice->setNamespace($namespace);
 
-        $result = $this->slice->baseNamespace('Controllers');
+        $result = $this->slice->namespace('Controllers');
 
-        $expectedNamespace = $baseNamespace . '\\Controllers';
+        $expectedNamespace = $namespace . '\\Controllers';
         $this->assertSame($expectedNamespace, $result);
     }
 
@@ -171,7 +171,7 @@ final class SliceTest extends TestCase
         $result = $this->slice
             ->setName('test-slice')
             ->setPath('/test/path')
-            ->setBaseNamespace('Test\\Namespace')
+            ->setNamespace('Test\\Namespace')
             ->useRoutes()
             ->useViews()
             ->useTranslations()
@@ -181,7 +181,7 @@ final class SliceTest extends TestCase
         $this->assertSame($this->slice, $result);
         $this->assertSame('test-slice', $this->slice->name());
         $this->assertSame('/test/path', $this->slice->path());
-        $this->assertSame('Test\\Namespace', $this->slice->baseNamespace());
+        $this->assertSame('Test\\Namespace', $this->slice->namespace());
         $this->assertTrue($this->slice->hasRoutes());
         $this->assertTrue($this->slice->hasViews());
         $this->assertTrue($this->slice->hasTranslations());

@@ -45,7 +45,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         $this->slice->setPath(dirname($this->getSliceBaseDir()));
 
-        $this->slice->setBaseNamespace($this->getSliceBaseNamespace());
+        $this->slice->setNamespace($this->getSliceNamespace());
 
         $this->configure($this->slice);
 
@@ -234,7 +234,7 @@ abstract class SliceServiceProvider extends ServiceProvider
         return dirname($this->reflector->getFileName());
     }
 
-    protected function getSliceBaseNamespace(): string
+    protected function getSliceNamespace(): string
     {
         return $this->reflector->getNamespaceName();
     }

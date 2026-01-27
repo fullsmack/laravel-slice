@@ -89,7 +89,7 @@ class MigrateSlice extends MigrateCommand
         }
 
         // Use slice connection if configured, otherwise allow --database or default
-        $connection = $this->sliceUsesConnection() ? $this->getSliceConnection() : $this->option('database');
+        $connection = $this->sliceUsesConnection() ? $this->sliceConnection() : $this->option('database');
 
         if ($this->sliceUsesConnection() && !$connection)
         {

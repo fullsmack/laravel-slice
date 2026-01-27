@@ -12,7 +12,7 @@ class Slice
 {
     protected string $name = '';
     protected string $path;
-    protected string $baseNamespace;
+    protected string $namespace;
 
     private bool $hasRoutes = false;
     private bool $hasTranslations = false;
@@ -165,21 +165,21 @@ class Slice
         return $this;
     }
 
-    public function setBaseNamespace(string $namespace): static
+    public function setNamespace(string $namespace): static
     {
-        $this->baseNamespace = $namespace;
+        $this->namespace = $namespace;
 
         return $this;
     }
 
-    public function baseNamespace(?string $subnamespace = null): string
+    public function namespace(?string $subnamespace = null): string
     {
         if ($subnamespace === null)
         {
-            return $this->baseNamespace;
+            return $this->namespace;
         }
 
-        return $this->baseNamespace .'\\'. $subnamespace;
+        return $this->namespace .'\\'. $subnamespace;
     }
 
     /**
@@ -190,12 +190,12 @@ class Slice
     {
         $prefix = Str::studly(config('laravel-slice.root.namespace', 'slice'));
 
-        if (Str::startsWith($this->baseNamespace, $prefix . '\\'))
+        if (Str::startsWith($this->namespace, $prefix . '\\'))
         {
-            return Str::after($this->baseNamespace, $prefix . '\\');
+            return Str::after($this->namespace, $prefix . '\\');
         }
 
-        return $this->baseNamespace;
+        return $this->namespace;
     }
 
     public function name(): string

@@ -13,8 +13,6 @@ use FullSmack\LaravelSlice\SliceRegistry;
  * This trait handles resolving slice context from the --slice option,
  * loading from the registry, and providing getter methods for paths/namespaces.
  *
- * For slice creation (make:slice), also use SliceMakeDefinitions trait.
- *
  * @phpstan-require-extends \Illuminate\Console\Command
  */
 trait SliceDefinitions
@@ -54,10 +52,6 @@ trait SliceDefinitions
      */
     private string $sliceTestNamespace;
 
-    // =========================================================================
-    // Entry Point
-    // =========================================================================
-
     /**
      * Resolve slice from --slice option.
      * Loads from registry if slice exists, otherwise throws error.
@@ -81,13 +75,6 @@ trait SliceDefinitions
         $this->loadFromRegistry($sliceName);
     }
 
-    // =========================================================================
-    // Internal Methods
-    // =========================================================================
-
-    /**
-     * Load slice properties from the registry.
-     */
     private function loadFromRegistry(string $sliceName): void
     {
         $slice = SliceRegistry::get($sliceName);
@@ -95,18 +82,13 @@ trait SliceDefinitions
         $this->sliceName = $slice->name();
         $this->slicePath = $slice->path();
         $this->sliceFolderName = basename($this->slicePath);
-        $this->sliceNamespace = $slice->baseNamespace();
+        $this->sliceNamespace = $slice->namespace();
 
         $this->sliceTestNamespace = $this->resolveTestNamespace($slice->namespaceBase());
     }
 
-    // =========================================================================
-    // Slice-Mirrored Getter Methods
-    // =========================================================================
-
     /**
-     * Get the absolute path to the slice root, optionally with a subdirectory.
-     * Mirrors Slice::path()
+     * Gets the absolute path to the slice root, optionally with a subdirectory.
      */
     protected function slicePath(?string $directory = null): string
     {
@@ -116,29 +98,26 @@ trait SliceDefinitions
         }
 
         return $this->slicePath . DIRECTORY_SEPARATOR .
-            ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
+            $this->trimDirectoryParameter($directory);
     }
 
     /**
-     * Get the path to the slice's source folder, optionally with a subdirectory.
-     * Mirrors Slice::sourcePath()
+     * Gets the path to the slice's source folder, optionally with a subdirectory.
      */
     protected function sliceSourcePath(?string $directory = null): string
     {
-        $source = $this->slicePath . DIRECTORY_SEPARATOR . 'src';
+        $sourceDirectory = 'src';
 
-        if ($directory === null)
-        {
-            return $source;
-        }
+        $directory = !$directory
+            ? $sourceDirectory
+            : $sourceDirectory . DIRECTORY_SEPARATOR .
+                $this->trimDirectoryParameter($directory);
 
-        return $source . DIRECTORY_SEPARATOR .
-            ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
+        return $this->slicePath($directory);
     }
 
     /**
-     * Get the path to the slice's migrations folder.
-     * Mirrors Slice::migrationPath()
+     * Gets the path to the slice's migrations folder.
      */
     protected function sliceMigrationPath(): string
     {
@@ -146,8 +125,7 @@ trait SliceDefinitions
     }
 
     /**
-     * Get the internal source folder name (always 'src').
-     * Mirrors Slice::sourceFolder()
+     * Gets the internal source folder name (always 'src').
      */
     protected function sliceSourceFolder(): string
     {
@@ -155,8 +133,7 @@ trait SliceDefinitions
     }
 
     /**
-     * Get the slice namespace, optionally with a sub-namespace.
-     * Mirrors Slice::baseNamespace()
+     * Gets the slice namespace, optionally with a sub-namespace.
      */
     protected function sliceNamespace(?string $subnamespace = null): string
     {
@@ -169,7 +146,7 @@ trait SliceDefinitions
     }
 
     /**
-     * Get the test namespace, optionally with a sub-namespace.
+     * Gets the test namespace, optionally with a sub-namespace.
      */
     protected function sliceTestNamespace(?string $subnamespace = null): string
     {
@@ -182,7 +159,7 @@ trait SliceDefinitions
     }
 
     /**
-     * Get the project-relative path to the slice root.
+     * Gets the project-relative path to the slice root.
      * Example: 'src/api/posts' when slicePath is '/var/www/project/src/api/posts'
      */
     protected function sliceProjectPath(): string
@@ -198,34 +175,9 @@ trait SliceDefinitions
         return str_replace('\\', '/', $relativePath);
     }
 
-    // =========================================================================
-    // State & Registry Methods
-    // =========================================================================
-
-    /**
-     * Check if currently operating in slice context.
-     */
     private function runInSlice(): bool
     {
         return isset($this->sliceName);
-    }
-
-    /**
-     * Get the registered Slice object if available.
-     */
-    private function getRegisteredSlice(): ?Slice
-    {
-        if (!$this->runInSlice())
-        {
-            return null;
-        }
-
-        if (!SliceRegistry::has($this->sliceName))
-        {
-            return null;
-        }
-
-        return SliceRegistry::get($this->sliceName);
     }
 
     /**
@@ -239,21 +191,18 @@ trait SliceDefinitions
     }
 
     /**
-     * Get the slice's database connection name.
+     * Gets the slice's database connection name.
      */
-    private function getSliceConnection(): ?string
+    private function sliceConnection(): ?string
     {
         $slice = $this->getRegisteredSlice();
 
         return $slice?->connection();
     }
 
-    // =========================================================================
-    // Override Methods (for Laravel generator commands)
-    // =========================================================================
-
     /**
-     * Get the root namespace for class generation.
+     * Gets the root namespace for class generation.
+     * Overrides Laravel command method
      *
      * @return string
      */
@@ -269,7 +218,8 @@ trait SliceDefinitions
     }
 
     /**
-     * Get the destination path for generated classes.
+     * Gets the destination path for generated classes.
+     * Overrides Laravel command method
      *
      * @param string $name
      * @return string
@@ -288,7 +238,8 @@ trait SliceDefinitions
     }
 
     /**
-     * Get the view directory path for the slice.
+     * Gets the view directory path for the slice.
+     * Overrides Laravel command method
      *
      * @param string $path
      * @return string
@@ -306,9 +257,28 @@ trait SliceDefinitions
         return $views . ($path ? DIRECTORY_SEPARATOR . $path : $path);
     }
 
-    // =========================================================================
-    // Private Helper Methods
-    // =========================================================================
+    /**
+     * Gets the registered Slice object if available.
+     */
+    private function getRegisteredSlice(): ?Slice
+    {
+        if (!$this->runInSlice())
+        {
+            return null;
+        }
+
+        if (!SliceRegistry::has($this->sliceName))
+        {
+            return null;
+        }
+
+        return SliceRegistry::get($this->sliceName);
+    }
+
+    private function trimDirectoryParameter(?string $directory = null): string
+    {
+        return ltrim(ltrim($directory, '/'), DIRECTORY_SEPARATOR);
+    }
 
     /**
      * Resolve the test namespace from the namespace base.

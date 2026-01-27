@@ -51,7 +51,7 @@ final class SliceDefinitionsTest extends TestCase
         $slice = (new Slice($this->testSliceName, $this->testSlicePath))
             ->setName($this->testSliceName)
             ->setPath($this->testSlicePath)
-            ->setBaseNamespace('Domain\\TestSlice');
+            ->setNamespace('Domain\\TestSlice');
 
         SliceRegistry::register($slice);
 
@@ -114,7 +114,7 @@ final class SliceDefinitionsTest extends TestCase
             protected $signature = 'test:command {sliceName} {--dir=}';
 
             public function handle() {
-                $this->resolveSliceFromArgument();
+                $this->defineSliceFromArgument();
                 return 0;
             }
 
@@ -150,7 +150,7 @@ final class SliceDefinitionsTest extends TestCase
             protected $signature = 'test:command {sliceName} {--dir=}';
 
             public function handle() {
-                $this->resolveSliceFromArgument();
+                $this->defineSliceFromArgument();
                 return 0;
             }
 
@@ -180,7 +180,7 @@ final class SliceDefinitionsTest extends TestCase
             protected $signature = 'test:command {sliceName} {--dir=}';
 
             public function handle() {
-                $this->resolveSliceFromArgument();
+                $this->defineSliceFromArgument();
                 return 0;
             }
 
@@ -212,7 +212,7 @@ final class SliceDefinitionsTest extends TestCase
             protected $signature = 'test:command {sliceName} {--dir=}';
 
             public function handle() {
-                $this->resolveSliceFromArgument();
+                $this->defineSliceFromArgument();
                 return 0;
             }
 
@@ -271,7 +271,7 @@ final class SliceDefinitionsTest extends TestCase
         $slice = (new Slice($this->testSliceName, $this->testSlicePath))
             ->setName($this->testSliceName)
             ->setPath($this->testSlicePath)
-            ->setBaseNamespace('Domain\\TestSlice')
+            ->setNamespace('Domain\\TestSlice')
             ->useConnection('mysql');
 
         SliceRegistry::register($slice);
@@ -291,7 +291,7 @@ final class SliceDefinitionsTest extends TestCase
             }
 
             public function getConnection(): ?string {
-                return $this->getSliceConnection();
+                return $this->sliceConnection();
             }
         };
 
@@ -310,7 +310,7 @@ final class SliceDefinitionsTest extends TestCase
         $slice = (new Slice($this->testSliceName, $this->testSlicePath))
             ->setName($this->testSliceName)
             ->setPath($this->testSlicePath)
-            ->setBaseNamespace('Domain\\TestSlice');
+            ->setNamespace('Domain\\TestSlice');
 
         SliceRegistry::register($slice);
 
@@ -329,7 +329,7 @@ final class SliceDefinitionsTest extends TestCase
             }
 
             public function getConnection(): ?string {
-                return $this->getSliceConnection();
+                return $this->sliceConnection();
             }
         };
 
@@ -452,7 +452,7 @@ final class SliceDefinitionsTest extends TestCase
             protected $signature = 'test:slice-creation {sliceName} {--dir=}';
 
             public function handle(): int {
-                $this->resolveSliceFromArgument();
+                $this->defineSliceFromArgument();
                 return 0;
             }
 
@@ -527,7 +527,7 @@ final class SliceDefinitionsTest extends TestCase
      * @return array<string, array{
      *     sliceName: string,
      *     slicePath: string,
-     *     baseNamespace: string,
+     *     namespace: string,
      *     expectedTestNamespace: string
      * }>
      */
@@ -537,19 +537,19 @@ final class SliceDefinitionsTest extends TestCase
             'flat slice from registry' => [
                 'sliceName' => 'blog',
                 'slicePath' => 'src/blog',
-                'baseNamespace' => 'Slice\\Blog',
+                'namespace' => 'Slice\\Blog',
                 'expectedTestNamespace' => 'Test\\Blog',
             ],
             'nested slice from registry' => [
                 'sliceName' => 'api.posts',
                 'slicePath' => 'src/api/posts',
-                'baseNamespace' => 'Slice\\Api\\Posts',
+                'namespace' => 'Slice\\Api\\Posts',
                 'expectedTestNamespace' => 'Test\\Api\\Posts',
             ],
             'deeply nested slice from registry' => [
                 'sliceName' => 'admin.api.v2.users',
                 'slicePath' => 'src/admin/api/v2/users',
-                'baseNamespace' => 'Slice\\Admin\\Api\\V2\\Users',
+                'namespace' => 'Slice\\Admin\\Api\\V2\\Users',
                 'expectedTestNamespace' => 'Test\\Admin\\Api\\V2\\Users',
             ],
         ];
@@ -560,7 +560,7 @@ final class SliceDefinitionsTest extends TestCase
     public function it_retrieves_correct_values_from_registered_slice(
         string $sliceName,
         string $slicePath,
-        string $baseNamespace,
+        string $namespace,
         string $expectedTestNamespace
     ): void
     {
@@ -573,7 +573,7 @@ final class SliceDefinitionsTest extends TestCase
         $slice = (new Slice())
             ->setName($sliceName)
             ->setPath($absolutePath)
-            ->setBaseNamespace($baseNamespace);
+            ->setNamespace($namespace);
 
         SliceRegistry::register($slice);
 
@@ -616,7 +616,7 @@ final class SliceDefinitionsTest extends TestCase
         // Assert values match what was registered (normalize paths for cross-platform)
         $this->assertEquals($sliceName, $command->getSliceName(), 'Slice name mismatch');
         $this->assertPathEquals($absolutePath, $command->getSlicePath(), 'Path mismatch');
-        $this->assertEquals($baseNamespace, $command->getSliceNamespace(), 'Namespace mismatch');
+        $this->assertEquals($namespace, $command->getSliceNamespace(), 'Namespace mismatch');
         $this->assertEquals($expectedTestNamespace, $command->getSliceTestNamespace(), 'Test namespace mismatch');
         $this->assertEquals($slicePath, $command->getSliceProjectPath(), 'Project path mismatch');
 
@@ -646,7 +646,7 @@ final class SliceDefinitionsTest extends TestCase
      * @return array<string, array{
      *     sliceName: string,
      *     slicePath: string,
-     *     baseNamespace: string,
+     *     namespace: string,
      *     expectedTestNamespace: string,
      *     expectedFolderName: string
      * }>
@@ -657,35 +657,35 @@ final class SliceDefinitionsTest extends TestCase
             'custom name and namespace - deeply nested path' => [
                 'sliceName' => 'api-user',
                 'slicePath' => 'src/admin/api/v2/users',
-                'baseNamespace' => 'Module\\User',
+                'namespace' => 'Module\\User',
                 'expectedTestNamespace' => 'Test\\Module\\User',
                 'expectedFolderName' => 'users',
             ],
             'simple name with complex path' => [
                 'sliceName' => 'auth',
                 'slicePath' => 'src/platform/services/authentication/core',
-                'baseNamespace' => 'Auth\\Core',
+                'namespace' => 'Auth\\Core',
                 'expectedTestNamespace' => 'Test\\Auth\\Core',
                 'expectedFolderName' => 'core',
             ],
             'dotted name with flat path' => [
                 'sliceName' => 'acme.billing.subscriptions',
                 'slicePath' => 'src/billing',
-                'baseNamespace' => 'Acme\\Billing\\Subscriptions',
+                'namespace' => 'Acme\\Billing\\Subscriptions',
                 'expectedTestNamespace' => 'Test\\Acme\\Billing\\Subscriptions',
                 'expectedFolderName' => 'billing',
             ],
             'vendor-style namespace' => [
                 'sliceName' => 'payments',
                 'slicePath' => 'src/integrations/stripe',
-                'baseNamespace' => 'Vendor\\Stripe\\Payments',
+                'namespace' => 'Vendor\\Stripe\\Payments',
                 'expectedTestNamespace' => 'Test\\Vendor\\Stripe\\Payments',
                 'expectedFolderName' => 'stripe',
             ],
             'kebab name with pascal namespace' => [
                 'sliceName' => 'user-profile-settings',
                 'slicePath' => 'src/users/profile',
-                'baseNamespace' => 'App\\Domain\\UserProfileSettings',
+                'namespace' => 'App\\Domain\\UserProfileSettings',
                 'expectedTestNamespace' => 'Test\\App\\Domain\\UserProfileSettings',
                 'expectedFolderName' => 'profile',
             ],
@@ -697,7 +697,7 @@ final class SliceDefinitionsTest extends TestCase
     public function it_preserves_custom_slice_configuration_from_registry(
         string $sliceName,
         string $slicePath,
-        string $baseNamespace,
+        string $namespace,
         string $expectedTestNamespace,
         string $expectedFolderName
     ): void
@@ -711,7 +711,7 @@ final class SliceDefinitionsTest extends TestCase
         $slice = (new Slice())
             ->setName($sliceName)
             ->setPath($absolutePath)
-            ->setBaseNamespace($baseNamespace);
+            ->setNamespace($namespace);
 
         SliceRegistry::register($slice);
 
@@ -762,7 +762,7 @@ final class SliceDefinitionsTest extends TestCase
         // Assert custom values are preserved from registry
         $this->assertEquals($sliceName, $command->getSliceName(), 'Slice name should match registered value');
         $this->assertPathEquals($absolutePath, $command->getSlicePath(), 'Path should match registered value');
-        $this->assertEquals($baseNamespace, $command->getSliceNamespace(), 'Namespace should match registered value');
+        $this->assertEquals($namespace, $command->getSliceNamespace(), 'Namespace should match registered value');
         $this->assertEquals($expectedTestNamespace, $command->getSliceTestNamespace(), 'Test namespace should be derived from registered namespace');
         $this->assertEquals($expectedFolderName, $command->getSliceFolderName(), 'Folder name should be derived from path');
         $this->assertEquals($slicePath, $command->getSliceProjectPath(), 'Project path should match registered path');

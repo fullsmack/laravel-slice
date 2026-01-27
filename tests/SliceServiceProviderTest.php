@@ -128,7 +128,7 @@ final class SliceServiceProviderTest extends TestCase
         $slice = $sliceProperty->getValue($provider);
 
         $expectedNamespace = (new \ReflectionClass($provider))->getNamespaceName();
-        $this->assertSame($expectedNamespace, $slice->baseNamespace());
+        $this->assertSame($expectedNamespace, $slice->namespace());
     }
 
     #[Test]
