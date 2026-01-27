@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Command;
 
+use Illuminate\Console\Command;
 use Illuminate\Database\Console\Migrations\MigrateMakeCommand;
 use Illuminate\Database\Migrations\MigrationCreator;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Composer;
+use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\SliceRegistry;
 
 class MakeMigration extends MigrateMakeCommand
@@ -28,7 +30,7 @@ class MakeMigration extends MigrateMakeCommand
     }
 
     /**
-     * @return void
+     * @return int
      */
     public function handle()
     {
@@ -36,23 +38,23 @@ class MakeMigration extends MigrateMakeCommand
 
         if (!$sliceName)
         {
-            parent::handle();
-
-            return;
+            return parent::handle();
         }
 
-        $this->resolveSliceFromOption();
-
-        if (!$this->runInSlice())
+        try {
+            $this->loadFromRegistry($sliceName);
+        }
+        catch (SliceNotRegistered $e)
         {
-            // Slice not found in registry, error already shown
-            return;
+            $this->error($e->getMessage());
+
+            return Command::FAILURE;
         }
 
         $this->input->setOption('path', $this->sliceMigrationPath());
         $this->input->setOption('realpath', true);
 
-        parent::handle();
+        return parent::handle();
     }
 
     protected function resolveSliceConnection(): ?string

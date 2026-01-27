@@ -10,24 +10,8 @@ use Illuminate\Support\Str;
  */
 trait SliceMakeDefinitions
 {
-    // =========================================================================
-    // Entry Point
-    // =========================================================================
-
-    private function defineSliceFromArgument(): void
+    private function defineSlice(string $sliceName, ?string $dirOption = null): void
     {
-        $sliceName = $this->argument('sliceName');
-
-        if (!$sliceName)
-        {
-            $this->error('Please provide a slice name as the first argument.');
-
-            return;
-        }
-
-        /** @var string|null $dirOption */
-        $dirOption = $this->option('dir');
-
         $config = config('laravel-slice');
 
         [$subdirectoryPath, $actualSliceName] = $this->parseSliceIdentifier($sliceName);

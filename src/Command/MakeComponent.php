@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Command;
 
+use Illuminate\Console\Command;
 use Illuminate\Foundation\Console\ComponentMakeCommand;
 use Illuminate\Console\GeneratorCommand;
 use Symfony\Component\Console\Input\InputOption;
 
 use FullSmack\LaravelSlice\Command\SliceDefinitions;
+use FullSmack\LaravelSlice\SliceNotRegistered;
 
 class MakeComponent extends ComponentMakeCommand
 {
@@ -21,13 +23,26 @@ class MakeComponent extends ComponentMakeCommand
     protected $description = 'Create a new view component class in a slice';
 
     /**
-     * @return void
+     * @return int
      */
     public function handle()
     {
-        $this->resolveSliceFromOption();
+        $sliceName = $this->option('slice');
 
-        parent::handle();
+        if (!$sliceName)
+        {
+            return parent::handle();
+        }
+
+        try {
+            $this->loadFromRegistry($sliceName);
+        }
+        catch (SliceNotRegistered $e)
+        {
+            $this->error($e->getMessage());
+
+            return Command::FAILURE;
+        }
     }
 
     /**

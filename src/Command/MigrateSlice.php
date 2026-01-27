@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Command;
 
+use Illuminate\Console\Command;
 use Illuminate\Database\Console\Migrations\MigrateCommand;
 use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use FullSmack\LaravelSlice\SliceNotRegistered;
 
 class MigrateSlice extends MigrateCommand
 {
@@ -44,31 +46,44 @@ class MigrateSlice extends MigrateCommand
      */
     public function handle()
     {
-        $this->resolveSliceFromOption();
+        $sliceName = $this->option('slice');
 
-        if (!$this->runInSlice())
+        if (!$sliceName)
         {
             return parent::handle();
+        }
+
+        try {
+            $this->loadFromRegistry($sliceName);
+        }
+        catch (SliceNotRegistered $e)
+        {
+            $this->error($e->getMessage());
+
+            return Command::FAILURE;
         }
 
         // Validate --path option cannot be used with --slice (path is determined automatically)
         if ($this->option('path'))
         {
             $this->error('The --path option cannot be used with --slice. The slice path is determined automatically.');
-            return 1;
+
+            return Command::FAILURE;
         }
 
         // If slice has its own connection, don't allow --database override
         if ($this->sliceUsesConnection() && $this->option('database'))
         {
             $this->error('The --database option cannot be used with --slice when the slice has a configured connection.');
-            return 1;
+
+            return Command::FAILURE;
         }
 
         if (!File::exists($this->slicePath()))
         {
             $this->error("Slice '{$this->sliceName}' does not exist at path: {$this->slicePath()}");
-            return 1;
+
+            return Command::FAILURE;
         }
 
         $migrationPath = $this->sliceMigrationPath();
@@ -76,7 +91,8 @@ class MigrateSlice extends MigrateCommand
         if (!File::exists($migrationPath))
         {
             $this->warn("No migrations directory found for slice '{$this->sliceName}' at: {$migrationPath}");
-            return 0;
+
+            return Command::SUCCESS;
         }
 
         /* Checks if there are any migration files */
@@ -85,7 +101,8 @@ class MigrateSlice extends MigrateCommand
         if ($migrationFiles === [])
         {
             $this->info("No migration files found for slice '{$this->sliceName}'.");
-            return 0;
+
+            return Command::SUCCESS;
         }
 
         // Use slice connection if configured, otherwise allow --database or default
@@ -94,7 +111,8 @@ class MigrateSlice extends MigrateCommand
         if ($this->sliceUsesConnection() && !$connection)
         {
             $this->error("Slice '{$this->sliceName}' is configured to use a connection but no connection is defined. Use ->useConnection('connection-name') when configuring the slice.");
-            return 1;
+
+            return Command::FAILURE;
         }
 
         $params = array_filter([

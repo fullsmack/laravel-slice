@@ -35,7 +35,13 @@ class MakeSlice extends Command
      */
     public function handle()
     {
-        $this->defineSliceFromArgument();
+        /** @var string $sliceName */
+        $sliceName = $this->argument('sliceName');
+
+        /** @var string|null $dirOption */
+        $dirOption = $this->option('dir');
+
+        $this->defineSlice($sliceName, $dirOption);
 
         if (File::exists($this->slicePath()))
         {

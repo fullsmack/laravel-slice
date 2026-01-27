@@ -64,7 +64,12 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle()
             {
-                $this->resolveSliceFromOption();
+                $sliceName = $this->option('slice');
+
+                if ($sliceName)
+                {
+                    $this->loadFromRegistry($sliceName);
+                }
                 return 0;
             }
 
@@ -123,7 +128,7 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle()
             {
-                $this->defineSliceFromArgument();
+                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
                 return 0;
             }
 
@@ -163,7 +168,7 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle()
             {
-                $this->defineSliceFromArgument();
+                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
 
                 return 0;
             }
@@ -196,7 +201,7 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle()
             {
-                $this->defineSliceFromArgument();
+                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
                 return 0;
             }
 
@@ -231,7 +236,7 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle()
             {
-                $this->defineSliceFromArgument();
+                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
                 return 0;
             }
 
@@ -265,7 +270,10 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle()
             {
-                $this->resolveSliceFromOption();
+                $sliceName = $this->option('slice');
+                if ($sliceName) {
+                    $this->loadFromRegistry($sliceName);
+                }
                 return 0;
             }
 
@@ -307,7 +315,10 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle()
             {
-                $this->resolveSliceFromOption();
+                $sliceName = $this->option('slice');
+                if ($sliceName) {
+                    $this->loadFromRegistry($sliceName);
+                }
                 return 0;
             }
 
@@ -348,7 +359,10 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle()
             {
-                $this->resolveSliceFromOption();
+                $sliceName = $this->option('slice');
+                if ($sliceName) {
+                    $this->loadFromRegistry($sliceName);
+                }
                 return 0;
             }
 
@@ -482,7 +496,7 @@ final class SliceDefinitionsTest extends TestCase
             protected $signature = 'test:slice-creation {sliceName} {--dir=}';
 
             public function handle(): int {
-                $this->defineSliceFromArgument();
+                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
                 return 0;
             }
 
@@ -618,7 +632,10 @@ final class SliceDefinitionsTest extends TestCase
             protected $signature = 'test:registry-lookup {--slice=}';
 
             public function handle(): int {
-                $this->resolveSliceFromOption();
+                $sliceName = $this->option('slice');
+                if ($sliceName) {
+                    $this->loadFromRegistry($sliceName);
+                }
                 return 0;
             }
 
@@ -760,7 +777,10 @@ final class SliceDefinitionsTest extends TestCase
             protected $signature = 'test:custom-registry {--slice=}';
 
             public function handle(): int {
-                $this->resolveSliceFromOption();
+                $sliceName = $this->option('slice');
+                if ($sliceName) {
+                    $this->loadFromRegistry($sliceName);
+                }
                 return 0;
             }
 

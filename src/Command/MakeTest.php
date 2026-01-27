@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Command;
 
+use Illuminate\Console\Command;
 use Illuminate\Foundation\Console\TestMakeCommand;
 use Symfony\Component\Console\Input\InputOption;
 use Illuminate\Support\Str;
 use FullSmack\LaravelSlice\Path;
+use FullSmack\LaravelSlice\SliceNotRegistered;
 
 class MakeTest extends TestMakeCommand
 {
@@ -27,9 +29,22 @@ class MakeTest extends TestMakeCommand
      */
     public function handle()
     {
-        $this->resolveSliceFromOption();
+        $sliceName = $this->option('slice');
 
-        return parent::handle();
+        if (!$sliceName)
+        {
+            return parent::handle();
+        }
+
+        try {
+            $this->loadFromRegistry($sliceName);
+        }
+        catch (SliceNotRegistered $e)
+        {
+            $this->error($e->getMessage());
+
+            return Command::FAILURE;
+        }
     }
 
     /**

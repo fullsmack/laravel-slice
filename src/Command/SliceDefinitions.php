@@ -5,6 +5,7 @@ namespace FullSmack\LaravelSlice\Command;
 
 use Illuminate\Support\Str;
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\Path;
 
@@ -54,30 +55,17 @@ trait SliceDefinitions
     private string $sliceTestNamespace;
 
     /**
-     * Resolve slice from --slice option.
-     * Loads from registry if slice exists, otherwise throws error.
+     * @throws SliceNotRegistered
      */
-    private function resolveSliceFromOption(): void
-    {
-        $sliceName = $this->option('slice');
-
-        if (!$sliceName)
-        {
-            return;
-        }
-
-        if (!SliceRegistry::has($sliceName))
-        {
-            $this->error("Slice \"{$sliceName}\" is not registered. Create it first with make:slice.");
-
-            return;
-        }
-
-        $this->loadFromRegistry($sliceName);
-    }
-
     private function loadFromRegistry(string $sliceName): void
     {
+        if (!SliceRegistry::has($sliceName))
+        {
+            throw new SliceNotRegistered(
+                "Slice \"{$sliceName}\" is not registered. Create it first with make:slice."
+            );
+        }
+
         $slice = SliceRegistry::get($sliceName);
 
         $this->sliceName = $slice->name();
