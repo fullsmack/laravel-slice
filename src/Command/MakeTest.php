@@ -45,6 +45,8 @@ class MakeTest extends TestMakeCommand
 
             return Command::FAILURE;
         }
+
+        return parent::handle();
     }
 
     /**
