@@ -32,7 +32,7 @@ final class TestSliceTest extends TestCase
     #[Test]
     public function errors_when_slice_not_registered(): void
     {
-        $exitCode = Artisan::call('test', [
+        $exitCode = Artisan::call('slice:test', [
             '--slice' => 'non-existent-slice',
         ]);
 
@@ -56,13 +56,24 @@ final class TestSliceTest extends TestCase
 
         SliceRegistry::register($slice);
 
-        $exitCode = Artisan::call('test', [
+        $exitCode = Artisan::call('slice:test', [
             '--slice' => 'no-tests-slice',
         ]);
 
         $output = Artisan::output();
 
         $this->assertStringContainsString('No tests directory found', $output);
+        $this->assertEquals(1, $exitCode);
+    }
+
+    #[Test]
+    public function errors_when_slice_option_not_provided(): void
+    {
+        $exitCode = Artisan::call('slice:test');
+
+        $output = Artisan::output();
+
+        $this->assertStringContainsString('--slice option is required', $output);
         $this->assertEquals(1, $exitCode);
     }
 }
