@@ -134,4 +134,14 @@ trait RefreshSliceDatabase
     {
         static::$slicesMigrated = [];
     }
+
+    protected function autoRefreshAllSlices(): void
+    {
+        $slices = SliceRegistry::slicesWithConnections();
+
+        foreach ($slices as $slice)
+        {
+            $this->refreshSlice($slice->name());
+        }
+    }
 }

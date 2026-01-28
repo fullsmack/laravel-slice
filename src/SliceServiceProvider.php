@@ -190,7 +190,12 @@ abstract class SliceServiceProvider extends ServiceProvider
             throw SliceNotRegistered::becauseMigrationDirectoryDoesntExist($migrationDirectory);
         }
 
-        $this->loadMigrationsFrom($migrationDirectory);
+        // Only register globally if slice uses default connection
+        // Slices with custom connections are migrated via --slice or --all-slices
+        if (!$this->slice->usesConnection())
+        {
+            $this->loadMigrationsFrom($migrationDirectory);
+        }
     }
 
     protected function registerExtensions(): void

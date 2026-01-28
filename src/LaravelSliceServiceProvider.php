@@ -10,7 +10,9 @@ use FullSmack\LaravelSlice\Command\MakeSlice;
 use FullSmack\LaravelSlice\Command\MakeTest;
 use FullSmack\LaravelSlice\Command\MakeComponent;
 use FullSmack\LaravelSlice\Command\MakeMigration;
+use FullSmack\LaravelSlice\Command\ListSliceMigrations;
 use FullSmack\LaravelSlice\Command\MigrateSlice;
+use FullSmack\LaravelSlice\Command\TestSlice;
 
 class LaravelSliceServiceProvider extends ServiceProvider
 {
@@ -21,6 +23,8 @@ class LaravelSliceServiceProvider extends ServiceProvider
         MakeSlice::class,
         MakeTest::class,
         MakeComponent::class,
+        ListSliceMigrations::class,
+        TestSlice::class,
     ];
 
     /**
@@ -85,7 +89,10 @@ class LaravelSliceServiceProvider extends ServiceProvider
                 return new MigrateSlice($app['migrator'], $app['events']);
             });
 
-            $this->commands([MakeMigration::class, MigrateSlice::class]);
+            $this->commands([
+                MakeMigration::class,
+                MigrateSlice::class,
+            ]);
         }
     }
 }

@@ -200,7 +200,7 @@ final class SliceFileLoadingTest extends TestCase
     }
 
     #[Test]
-    public function it_loads_migrations_even_when_slice_uses_connection(): void
+    public function it_does_not_load_migrations_globally_when_slice_uses_connection(): void
     {
         // Create a test migration file
         $migrationsDir = $this->tempSliceDir . '/database/migrations';
@@ -214,15 +214,15 @@ final class SliceFileLoadingTest extends TestCase
         $provider->register();
         $provider->boot();
 
-        // Verify that the migration directory was added to the migrator's paths
+        // Verify that the migration directory was NOT added to the migrator's paths
+        // (slices with custom connections should not register migrations globally)
         $migrator = $this->app->make('migrator');
         $paths = $migrator->paths();
 
-        // The path should be resolved - src/../database/migrations should equal database/migrations
         $expectedPath = realpath($migrationsDir);
         $actualPathsResolved = array_map('realpath', $paths);
 
-        $this->assertContains($expectedPath, $actualPathsResolved, 'Migration directory should be registered even when slice uses a connection');
+        $this->assertNotContains($expectedPath, $actualPathsResolved, 'Migration directory should NOT be registered globally when slice uses a custom connection');
     }
 
     private function createProviderWithTempPath(?callable $configureCallback = null): SliceServiceProvider

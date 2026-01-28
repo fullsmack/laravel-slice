@@ -10,6 +10,7 @@ use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
 use FullSmack\LaravelSlice\SliceNotRegistered;
+use FullSmack\LaravelSlice\SliceRegistry;
 
 class MigrateSlice extends MigrateCommand
 {
@@ -30,6 +31,7 @@ class MigrateSlice extends MigrateCommand
         {--step : Force the migrations to be run so they can be rolled back individually}
         {--graceful : Return a successful exit code even if an error occurs}
         {--slice= : Run migrations for a specific slice}
+        {--all-slices : Run migrations for all registered slices}
         {--dir= : Subdirectory where the slice is located}';
 
     /**
@@ -48,12 +50,92 @@ class MigrateSlice extends MigrateCommand
     public function handle()
     {
         $sliceName = $this->option('slice');
+        $allSlices = $this->option('all-slices');
 
-        if (!$sliceName || !is_string($sliceName))
+        // Validation: cannot use both options together
+        if ($sliceName && $allSlices)
         {
-            return parent::handle();
+            $this->error('Cannot use --slice and --all-slices together.');
+
+            return Command::FAILURE;
         }
 
+        // Handle --all-slices: run default migrations first, then each slice
+        if ($allSlices)
+        {
+            return $this->migrateAllSlices();
+        }
+
+        // Handle --slice: existing behavior (single slice)
+        if ($sliceName && is_string($sliceName))
+        {
+            return $this->migrateSingleSlice($sliceName);
+        }
+
+        return parent::handle();
+    }
+
+    /**
+     * Migrate all registered slices with custom connections.
+     */
+    protected function migrateAllSlices(): int
+    {
+        // First, run default connection migrations
+        $this->info('Running default connection migrations...');
+
+        $result = parent::handle();
+
+        if ($result !== 0 && !$this->option('graceful'))
+        {
+            return $result;
+        }
+
+        // Migrates each registered slice with a connection
+        $slices = SliceRegistry::slicesWithConnections();
+
+        if ($slices->isEmpty())
+        {
+            $this->info('No slices with custom connections registered.');
+
+            return Command::SUCCESS;
+        }
+
+        foreach ($slices as $slice)
+        {
+            $this->info("Migrating slice: {$slice->name()}...");
+
+            $migrationPath = $slice->migrationPath();
+
+            if (!is_dir($migrationPath))
+            {
+                $this->warn("  No migrations directory found, skipping.");
+
+                continue;
+            }
+
+            $exitCode = Artisan::call('migrate', [
+                '--database' => $slice->connection(),
+                '--path' => $migrationPath,
+                '--realpath' => true,
+                '--force' => $this->option('force'),
+                '--pretend' => $this->option('pretend'),
+                '--step' => $this->option('step'),
+            ], $this->output);
+
+            if ($exitCode !== 0 && !$this->option('graceful'))
+            {
+                return $exitCode;
+            }
+        }
+
+        return Command::SUCCESS;
+    }
+
+    /**
+     * Migrate a single slice.
+     */
+    protected function migrateSingleSlice(string $sliceName): int
+    {
         try {
             $this->loadFromRegistry($sliceName);
         }
