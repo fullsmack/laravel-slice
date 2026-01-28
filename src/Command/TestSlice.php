@@ -4,16 +4,17 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice\Command;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Artisan;
-use NunoMaduro\Collision\Adapters\Laravel\Commands\TestCommand;
+use Symfony\Component\Process\Exception\ProcessSignaledException;
+use Symfony\Component\Process\Process;
 use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\SliceNotRegistered;
+use RuntimeException;
 
 /**
- * Extends the test command to support slice-scoped testing.
+ * Run tests scoped to a specific slice.
  *
- * When --slice is provided, this command runs tests only for that slice.
- * Otherwise, it delegates to the standard test command.
+ * This command spawns PHPUnit/Pest directly with the slice's test path,
+ * providing real-time streaming output like the standard test command.
  */
 class TestSlice extends Command
 {
@@ -80,146 +81,182 @@ class TestSlice extends Command
         $this->info("Test path: {$testPath}");
         $this->newLine();
 
-        // Build arguments to pass to the test command
-        // We inject the test path via $_SERVER['argv'] manipulation
-        $originalArgv = $_SERVER['argv'];
-
-        try {
-            // Rebuild argv without our custom options, but with the test path
-            $_SERVER['argv'] = $this->buildArgvForTestCommand($testPath);
-
-            return Artisan::call(TestCommand::class, $this->buildTestOptions(), $this->output);
-        }
-        finally
-        {
-            // Restore original argv
-            $_SERVER['argv'] = $originalArgv;
-        }
+        return $this->runTests($testPath);
     }
 
     /**
-     * Build the argv array for the test command.
+     * Run the tests using a Process for real-time output streaming.
+     */
+    protected function runTests(string $testPath): int
+    {
+        $process = (new Process(
+            $this->buildCommand($testPath),
+            base_path(),
+            $this->buildEnvironmentVariables(),
+        ))->setTimeout(null);
+
+        try {
+            $process->setTty(!$this->option('without-tty'));
+        }
+        catch (RuntimeException)
+        {
+            // TTY not supported, continue without it
+        }
+
+        $exitCode = 1;
+
+        try {
+            $exitCode = $process->run(function (string $type, string $line): void
+            {
+                $this->output->write($line);
+            });
+        }
+        catch (ProcessSignaledException $e)
+        {
+            if (extension_loaded('pcntl') && $e->getSignal() !== SIGINT)
+            {
+                throw $e;
+            }
+        }
+
+        return $exitCode;
+    }
+
+    /**
+     * Build the test command with all arguments.
      *
      * @return array<int, string>
      */
-    protected function buildArgvForTestCommand(string $testPath): array
+    protected function buildCommand(string $testPath): array
     {
-        $argv = ['artisan', 'test'];
+        $command = $this->binary();
 
-        // Pass through supported options
-        if ($this->option('without-tty'))
-        {
-            $argv[] = '--without-tty';
-        }
+        // Add common arguments
+        $command = array_merge($command, $this->buildArguments());
 
-        if ($this->option('compact'))
-        {
-            $argv[] = '--compact';
-        }
+        // Add configuration file
+        $command[] = '--configuration=' . $this->getConfigurationFile();
 
-        if ($this->option('coverage'))
-        {
-            $argv[] = '--coverage';
-        }
+        // Add the slice test path
+        $command[] = $testPath;
 
-        $min = $this->option('min');
-        if ($min !== null && is_string($min))
-        {
-            $argv[] = "--min={$min}";
-        }
-
-        if ($this->option('parallel'))
-        {
-            $argv[] = '--parallel';
-        }
-
-        if ($this->option('profile'))
-        {
-            $argv[] = '--profile';
-        }
-
-        if ($this->option('recreate-databases'))
-        {
-            $argv[] = '--recreate-databases';
-        }
-
-        if ($this->option('drop-databases'))
-        {
-            $argv[] = '--drop-databases';
-        }
-
-        if ($this->option('without-databases'))
-        {
-            $argv[] = '--without-databases';
-        }
-
-        $filter = $this->option('filter');
-        if ($filter !== null && is_string($filter))
-        {
-            $argv[] = "--filter={$filter}";
-        }
-
-        // Add the test path as the final argument
-        $argv[] = $testPath;
-
-        return $argv;
+        return $command;
     }
 
     /**
-     * Build the options array for Artisan::call.
+     * Get the PHP binary and test runner.
      *
-     * @return array<string, mixed>
+     * @return array<int, string>
      */
-    protected function buildTestOptions(): array
+    protected function binary(): array
     {
-        $options = [];
-
-        if ($this->option('without-tty'))
+        if ($this->usingPest())
         {
-            $options['--without-tty'] = true;
+            $runner = $this->option('parallel')
+                ? ['vendor/pestphp/pest/bin/pest', '--parallel']
+                : ['vendor/pestphp/pest/bin/pest'];
+        }
+        else
+        {
+            $runner = $this->option('parallel')
+                ? ['vendor/brianium/paratest/bin/paratest']
+                : ['vendor/phpunit/phpunit/phpunit'];
         }
 
-        if ($this->option('compact'))
+        if (PHP_SAPI === 'phpdbg')
         {
-            $options['--compact'] = true;
+            return array_merge([PHP_BINARY, '-qrr'], $runner);
         }
 
+        return array_merge([PHP_BINARY], $runner);
+    }
+
+    /**
+     * Determine if Pest is being used.
+     */
+    protected function usingPest(): bool
+    {
+        return function_exists('\Pest\version');
+    }
+
+    /**
+     * Build the arguments for the test runner.
+     *
+     * @return array<int, string>
+     */
+    protected function buildArguments(): array
+    {
+        $arguments = [];
+
+        // Color support
+        if ($this->option('ansi'))
+        {
+            $arguments[] = '--colors=always';
+        }
+        elseif ($this->option('no-ansi'))
+        {
+            $arguments[] = '--colors=never';
+        }
+        else
+        {
+            $arguments[] = '--colors=always';
+        }
+
+        // Filter
+        $filter = $this->option('filter');
+        if ($filter !== null && is_string($filter))
+        {
+            $arguments[] = "--filter={$filter}";
+        }
+
+        // Coverage
         if ($this->option('coverage'))
         {
-            $options['--coverage'] = true;
+            $arguments[] = '--coverage-text';
         }
 
-        $min = $this->option('min');
-        if ($min !== null)
+        return $arguments;
+    }
+
+    /**
+     * Get the PHPUnit configuration file path.
+     */
+    protected function getConfigurationFile(): string
+    {
+        $file = base_path('phpunit.xml');
+
+        if (!file_exists($file))
         {
-            $options['--min'] = $min;
+            $file = base_path('phpunit.xml.dist');
         }
 
-        if ($this->option('parallel'))
-        {
-            $options['--parallel'] = true;
-        }
+        return $file;
+    }
 
-        if ($this->option('profile'))
-        {
-            $options['--profile'] = true;
-        }
+    /**
+     * Build environment variables for the test process.
+     *
+     * @return array<string, string>
+     */
+    protected function buildEnvironmentVariables(): array
+    {
+        $env = [];
 
         if ($this->option('recreate-databases'))
         {
-            $options['--recreate-databases'] = true;
+            $env['LARAVEL_PARALLEL_TESTING_DROP_DATABASES'] = '1';
         }
 
         if ($this->option('drop-databases'))
         {
-            $options['--drop-databases'] = true;
+            $env['LARAVEL_PARALLEL_TESTING_DROP_DATABASES'] = '1';
         }
 
         if ($this->option('without-databases'))
         {
-            $options['--without-databases'] = true;
+            $env['LARAVEL_PARALLEL_TESTING_WITHOUT_DATABASES'] = '1';
         }
 
-        return $options;
+        return $env;
     }
 }
