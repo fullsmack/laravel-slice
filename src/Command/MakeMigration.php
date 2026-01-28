@@ -30,15 +30,17 @@ class MakeMigration extends MigrateMakeCommand
     }
 
     /**
-     * @return int
+     * @return void
      */
     public function handle()
     {
         $sliceName = $this->option('slice');
 
-        if (!$sliceName)
+        if (!$sliceName || !is_string($sliceName))
         {
-            return parent::handle();
+            parent::handle();
+
+            return;
         }
 
         try {
@@ -48,13 +50,13 @@ class MakeMigration extends MigrateMakeCommand
         {
             $this->error($e->getMessage());
 
-            return Command::FAILURE;
+            return;
         }
 
         $this->input->setOption('path', $this->sliceMigrationPath());
         $this->input->setOption('realpath', true);
 
-        return parent::handle();
+        parent::handle();
     }
 
     protected function resolveSliceConnection(): ?string
@@ -73,7 +75,9 @@ class MakeMigration extends MigrateMakeCommand
     {
         if (!$this->option('slice'))
         {
-            return parent::writeMigration($name, $table, $create);
+            parent::writeMigration($name, $table, $create);
+
+            return;
         }
 
         $sliceCreator = new MigrationCreator(
@@ -98,6 +102,11 @@ class MakeMigration extends MigrateMakeCommand
     protected function replaceConnectionPlaceholder(string $file, ?string $connection): void
     {
         $contents = file_get_contents($file);
+
+        if ($contents === false)
+        {
+            return;
+        }
 
         $connectionLine = $connection
             ? "\n    protected \$connection = '{$connection}';\n"

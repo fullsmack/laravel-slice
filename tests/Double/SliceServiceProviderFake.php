@@ -12,7 +12,7 @@ final class SliceServiceProviderFake extends SliceServiceProvider
     private ?string $connection = null;
     private bool $useConnection = false;
 
-    /** @var array<class-string> */
+    /** @var array<class-string<\Illuminate\Database\Eloquent\Model>> */
     private array $modelClasses = [];
 
     public function __construct($app, string $sliceName = 'fake-slice')
@@ -33,7 +33,7 @@ final class SliceServiceProviderFake extends SliceServiceProvider
     }
 
     /**
-     * @param array<class-string> $models
+     * @param array<class-string<\Illuminate\Database\Eloquent\Model>> $models
      */
     public function withConnection(?string $connection = null, array $models = []): static
     {

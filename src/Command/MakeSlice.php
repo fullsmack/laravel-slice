@@ -70,11 +70,13 @@ class MakeSlice extends Command
 
         $serviceProviderContent = File::get($stubPath);
 
-        $serviceProviderContent = Str::replace(
+        $replaced = Str::replace(
             ['{{sliceRootNamespace}}', '{{slicePascalName}}', '{{sliceName}}'],
             [$this->sliceNamespaceBase(), $slicePascalName, $this->sliceName],
             $serviceProviderContent
         );
+
+        $serviceProviderContent = is_array($replaced) ? implode('', $replaced) : $replaced;
 
         $serviceProviderPath = $this->sliceSourcePath("{$slicePascalName}ServiceProvider.php");
 

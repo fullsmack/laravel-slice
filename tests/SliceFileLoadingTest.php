@@ -225,14 +225,14 @@ final class SliceFileLoadingTest extends TestCase
         $this->assertContains($expectedPath, $actualPathsResolved, 'Migration directory should be registered even when slice uses a connection');
     }
 
-    private function createProviderWithTempPath(callable $configureCallback = null): SliceServiceProvider
+    private function createProviderWithTempPath(?callable $configureCallback = null): SliceServiceProvider
     {
         return new class($this->app, $this->tempSliceDir, $configureCallback) extends SliceServiceProvider {
             private string $tempPath;
             /** @var callable|null */
             private $configureCallback;
 
-            public function __construct($app, string $tempPath, callable $configureCallback = null)
+            public function __construct($app, string $tempPath, ?callable $configureCallback = null)
             {
                 parent::__construct($app);
                 $this->tempPath = $tempPath;

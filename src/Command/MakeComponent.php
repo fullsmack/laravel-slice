@@ -23,15 +23,17 @@ class MakeComponent extends ComponentMakeCommand
     protected $description = 'Create a new view component class in a slice';
 
     /**
-     * @return int
+     * @return void
      */
     public function handle()
     {
         $sliceName = $this->option('slice');
 
-        if (!$sliceName)
+        if (!$sliceName || !is_string($sliceName))
         {
-            return parent::handle();
+            parent::handle();
+
+            return;
         }
 
         try {
@@ -41,8 +43,10 @@ class MakeComponent extends ComponentMakeCommand
         {
             $this->error($e->getMessage());
 
-            return Command::FAILURE;
+            return;
         }
+
+        parent::handle();
     }
 
     /**

@@ -19,7 +19,7 @@ abstract class SliceServiceProvider extends ServiceProvider
 {
     protected Slice $slice;
 
-    /** @var ReflectionClass<static> */
+    /** @var ReflectionClass<self> */
     private ReflectionClass $reflector;
     private Filesystem $filesystem;
 
@@ -222,16 +222,24 @@ abstract class SliceServiceProvider extends ServiceProvider
     }
 
     /**
-     * @return ReflectionClass<static>
+     * @return ReflectionClass<self>
      */
     protected function getReflector(): ReflectionClass
     {
+        /** @var ReflectionClass<self> */
         return new ReflectionClass($this::class);
     }
 
     protected function getSliceBaseDir(): string
     {
-        return dirname($this->reflector->getFileName());
+        $fileName = $this->reflector->getFileName();
+
+        if ($fileName === false)
+        {
+            throw new \RuntimeException('Unable to determine slice base directory');
+        }
+
+        return dirname($fileName);
     }
 
     protected function getSliceNamespace(): string

@@ -31,7 +31,7 @@ class MakeTest extends TestMakeCommand
     {
         $sliceName = $this->option('slice');
 
-        if (!$sliceName)
+        if (!$sliceName || !is_string($sliceName))
         {
             return parent::handle();
         }
@@ -43,7 +43,7 @@ class MakeTest extends TestMakeCommand
         {
             $this->error($e->getMessage());
 
-            return Command::FAILURE;
+            return false;
         }
 
         return parent::handle();
@@ -95,7 +95,7 @@ class MakeTest extends TestMakeCommand
     /**
      * @return array<array{
      *  0: string,
-     *  1: string,
+     *  1: string|null,
      *  2: int,
      *  3: string,
      * }>

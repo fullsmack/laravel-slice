@@ -49,7 +49,7 @@ final class SliceDefinitionsTest extends TestCase
     public function it_can_define_slice_from_registry(): void
     {
         // Create and register a slice
-        $slice = (new Slice($this->testSliceName, $this->testSlicePath))
+        $slice = (new Slice())
             ->setName($this->testSliceName)
             ->setPath($this->testSlicePath)
             ->setNamespace('Domain\\TestSlice');
@@ -62,11 +62,11 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {--slice=}';
 
-            public function handle()
+            public function handle(): int
             {
                 $sliceName = $this->option('slice');
 
-                if ($sliceName)
+                if ($sliceName && is_string($sliceName))
                 {
                     $this->loadFromRegistry($sliceName);
                 }
@@ -105,7 +105,7 @@ final class SliceDefinitionsTest extends TestCase
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         // Execute the command with --slice option
         $this->artisan('test:command', ['--slice' => $this->testSliceName])
@@ -126,9 +126,15 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {sliceName} {--dir=}';
 
-            public function handle()
+            public function handle(): int
             {
-                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
+                /** @var string $sliceName */
+                $sliceName = $this->argument('sliceName');
+                /** @var string|null $dir */
+                $dir = $this->option('dir');
+
+                $this->defineSlice($sliceName, is_string($dir) ? $dir : null);
+
                 return 0;
             }
 
@@ -148,7 +154,7 @@ final class SliceDefinitionsTest extends TestCase
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         $this->artisan('test:command', ['sliceName' => $this->testSliceName])
             ->assertSuccessful();
@@ -166,9 +172,14 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {sliceName} {--dir=}';
 
-            public function handle()
+            public function handle(): int
             {
-                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
+                /** @var string $sliceName */
+                $sliceName = $this->argument('sliceName');
+                /** @var string|null $dir */
+                $dir = $this->option('dir');
+
+                $this->defineSlice($sliceName, is_string($dir) ? $dir : null);
 
                 return 0;
             }
@@ -179,7 +190,7 @@ final class SliceDefinitionsTest extends TestCase
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         // Test with backslashes - should convert to forward slashes
         $this->artisan('test:command', ['sliceName' => 'api\\posts'])
@@ -199,9 +210,15 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {sliceName} {--dir=}';
 
-            public function handle()
+            public function handle(): int
             {
-                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
+                /** @var string $sliceName */
+                $sliceName = $this->argument('sliceName');
+                /** @var string|null $dir */
+                $dir = $this->option('dir');
+
+                $this->defineSlice($sliceName, is_string($dir) ? $dir : null);
+
                 return 0;
             }
 
@@ -210,13 +227,13 @@ final class SliceDefinitionsTest extends TestCase
                 return $this->sliceName ?? null;
             }
 
-            public function getSliceProjectPath(): ?string
+            public function getSliceProjectPath(): string
             {
                 return $this->sliceProjectPath();
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         $this->artisan('test:command', ['sliceName' => 'api/posts'])
             ->assertSuccessful();
@@ -234,9 +251,15 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {sliceName} {--dir=}';
 
-            public function handle()
+            public function handle(): int
             {
-                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
+                /** @var string $sliceName */
+                $sliceName = $this->argument('sliceName');
+                /** @var string|null $dir */
+                $dir = $this->option('dir');
+
+                $this->defineSlice($sliceName, is_string($dir) ? $dir : null);
+
                 return 0;
             }
 
@@ -245,13 +268,13 @@ final class SliceDefinitionsTest extends TestCase
                 return $this->sliceName ?? null;
             }
 
-            public function getSliceProjectPath(): ?string
+            public function getSliceProjectPath(): string
             {
                 return $this->sliceProjectPath();
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         $this->artisan('test:command', ['sliceName' => 'api.posts'])
             ->assertSuccessful();
@@ -268,10 +291,10 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {--slice=}';
 
-            public function handle()
+            public function handle(): int
             {
                 $sliceName = $this->option('slice');
-                if ($sliceName) {
+                if ($sliceName && is_string($sliceName)) {
                     $this->loadFromRegistry($sliceName);
                 }
                 return 0;
@@ -288,7 +311,7 @@ final class SliceDefinitionsTest extends TestCase
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         $this->artisan('test:command')
             ->assertSuccessful();
@@ -300,7 +323,7 @@ final class SliceDefinitionsTest extends TestCase
     #[Test]
     public function it_checks_slice_uses_connection(): void
     {
-        $slice = (new Slice($this->testSliceName, $this->testSlicePath))
+        $slice = (new Slice())
             ->setName($this->testSliceName)
             ->setPath($this->testSlicePath)
             ->setNamespace('Domain\\TestSlice')
@@ -313,10 +336,10 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {--slice=}';
 
-            public function handle()
+            public function handle(): int
             {
                 $sliceName = $this->option('slice');
-                if ($sliceName) {
+                if ($sliceName && is_string($sliceName)) {
                     $this->loadFromRegistry($sliceName);
                 }
                 return 0;
@@ -333,7 +356,7 @@ final class SliceDefinitionsTest extends TestCase
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         $this->artisan('test:command', ['--slice' => $this->testSliceName])
             ->assertSuccessful();
@@ -345,7 +368,7 @@ final class SliceDefinitionsTest extends TestCase
     #[Test]
     public function it_returns_null_connection_when_slice_does_not_use_connection(): void
     {
-        $slice = (new Slice($this->testSliceName, $this->testSlicePath))
+        $slice = (new Slice())
             ->setName($this->testSliceName)
             ->setPath($this->testSlicePath)
             ->setNamespace('Domain\\TestSlice');
@@ -357,10 +380,10 @@ final class SliceDefinitionsTest extends TestCase
 
             protected $signature = 'test:command {--slice=}';
 
-            public function handle()
+            public function handle(): int
             {
                 $sliceName = $this->option('slice');
-                if ($sliceName) {
+                if ($sliceName && is_string($sliceName)) {
                     $this->loadFromRegistry($sliceName);
                 }
                 return 0;
@@ -377,7 +400,7 @@ final class SliceDefinitionsTest extends TestCase
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         $this->artisan('test:command', ['--slice' => $this->testSliceName])
             ->assertSuccessful();
@@ -496,7 +519,12 @@ final class SliceDefinitionsTest extends TestCase
             protected $signature = 'test:slice-creation {sliceName} {--dir=}';
 
             public function handle(): int {
-                $this->defineSlice($this->argument('sliceName'), $this->option('dir'));
+                /** @var string $sliceName */
+                $sliceName = $this->argument('sliceName');
+                /** @var string|null $dir */
+                $dir = $this->option('dir');
+
+                $this->defineSlice($sliceName, is_string($dir) ? $dir : null);
                 return 0;
             }
 
@@ -538,7 +566,7 @@ final class SliceDefinitionsTest extends TestCase
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         $this->artisan('test:slice-creation', ['sliceName' => $inputPath])
             ->assertSuccessful();
@@ -633,7 +661,7 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle(): int {
                 $sliceName = $this->option('slice');
-                if ($sliceName) {
+                if ($sliceName && is_string($sliceName)) {
                     $this->loadFromRegistry($sliceName);
                 }
                 return 0;
@@ -664,7 +692,7 @@ final class SliceDefinitionsTest extends TestCase
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         $this->artisan('test:registry-lookup', ['--slice' => $sliceName])
             ->assertSuccessful();
@@ -778,7 +806,7 @@ final class SliceDefinitionsTest extends TestCase
 
             public function handle(): int {
                 $sliceName = $this->option('slice');
-                if ($sliceName) {
+                if ($sliceName && is_string($sliceName)) {
                     $this->loadFromRegistry($sliceName);
                 }
                 return 0;
@@ -818,7 +846,7 @@ final class SliceDefinitionsTest extends TestCase
             }
         };
 
-        $this->app->make('Illuminate\Contracts\Console\Kernel')->registerCommand($command);
+        \Illuminate\Support\Facades\Artisan::registerCommand($command);
 
         $this->artisan('test:custom-registry', ['--slice' => $sliceName])
             ->assertSuccessful();

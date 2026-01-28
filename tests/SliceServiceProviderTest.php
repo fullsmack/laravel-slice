@@ -112,7 +112,9 @@ final class SliceServiceProviderTest extends TestCase
         $sliceProperty->setAccessible(true);
         $slice = $sliceProperty->getValue($provider);
 
-        $expectedPath = dirname(dirname((new \ReflectionClass($provider))->getFileName()));
+        $fileName = (new \ReflectionClass($provider))->getFileName();
+        $this->assertNotFalse($fileName);
+        $expectedPath = dirname(dirname($fileName));
         $this->assertSame($expectedPath, $slice->path());
     }
 

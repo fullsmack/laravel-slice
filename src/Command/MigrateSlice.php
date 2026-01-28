@@ -49,7 +49,7 @@ class MigrateSlice extends MigrateCommand
     {
         $sliceName = $this->option('slice');
 
-        if (!$sliceName)
+        if (!$sliceName || !is_string($sliceName))
         {
             return parent::handle();
         }
@@ -134,7 +134,7 @@ class MigrateSlice extends MigrateCommand
         $this->line("Running migrations for slice: {$this->sliceName}");
         $this->line("Migration path: {$migrationPath}");
 
-        if ($connection)
+        if ($connection !== null && is_string($connection))
         {
             $this->line("Using database connection: {$connection}");
         }
