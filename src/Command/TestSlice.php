@@ -23,7 +23,7 @@ class TestSlice extends Command
      * @var string
      */
     protected $signature = 'slice:test
-        {--slice= : Run tests for a specific slice}
+        {sliceName : The name of the slice to test}
         {--dir= : Subdirectory where the slice is located}
         {--without-tty : Disable output to TTY}
         {--compact : Indicates whether the compact printer should be used}
@@ -46,12 +46,11 @@ class TestSlice extends Command
      */
     public function handle()
     {
-        $sliceName = $this->option('slice');
+        $sliceName = $this->argument('sliceName');
 
-        if (!$sliceName || !is_string($sliceName))
+        if (!is_string($sliceName))
         {
-            $this->error('The --slice option is required for slice:test command.');
-            $this->info('Use "php artisan test" to run all tests.');
+            $this->error('The sliceName argument is required.');
 
             return static::FAILURE;
         }
