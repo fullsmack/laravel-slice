@@ -4,16 +4,15 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice;
 
 use ReflectionClass;
+use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceNotRegistered;
+use FullSmack\LaravelSlice\SliceRegistry;
+use FullSmack\LaravelSlice\Extension;
+use Symfony\Component\Finder\SplFileInfo;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Illuminate\Filesystem\Filesystem;
-use Symfony\Component\Finder\SplFileInfo;
-use Illuminate\Database\Eloquent\Model;
-
-use FullSmack\LaravelSlice\Slice;
-use FullSmack\LaravelSlice\SliceRegistry;
-use FullSmack\LaravelSlice\Extension;
 
 abstract class SliceServiceProvider extends ServiceProvider
 {
@@ -54,6 +53,8 @@ abstract class SliceServiceProvider extends ServiceProvider
             throw SliceNotRegistered::becauseNameIsNotDefined();
         }
 
+        $this->registerConfig();
+
         SliceRegistry::register($this->slice);
 
         $this->sliceRegistered();
@@ -65,8 +66,6 @@ abstract class SliceServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->bootingSlice();
-
-        $this->registerConfig();
 
         if ($this->slice->hasRoutes())
         {

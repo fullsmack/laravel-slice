@@ -3,11 +3,12 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Test;
 
+use FullSmack\LaravelSlice\Test\TestCase;
 use PHPUnit\Framework\Attributes\Test;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceRegistry;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Artisan;
 
 final class TestSliceTest extends TestCase
 {

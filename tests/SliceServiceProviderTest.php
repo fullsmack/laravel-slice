@@ -16,6 +16,15 @@ final class SliceServiceProviderTest extends TestCase
     /** @var array<string> */
     private array $hooksCalled = [];
 
+    private ?string $tempConfigTestPath = null;
+
+    protected function tearDown(): void
+    {
+        $this->tearDownConfigTest();
+
+        parent::tearDown();
+    }
+
     private function createTestProvider(): SliceServiceProvider
     {
         return new class($this->app) extends SliceServiceProvider {
@@ -56,6 +65,55 @@ final class SliceServiceProviderTest extends TestCase
         };
     }
 
+
+    private function tearDownConfigTest(): void
+    {
+        if ($this->tempConfigTestPath !== null && is_dir($this->tempConfigTestPath))
+        {
+            $filesystem = new \Illuminate\Filesystem\Filesystem();
+            $filesystem->deleteDirectory($this->tempConfigTestPath);
+        }
+    }
+
+    private function createConfigDirectory(): string
+    {
+        $this->tempConfigTestPath = sys_get_temp_dir() . '/laravel-slice-config-test-' . uniqid();
+        $configDir = $this->tempConfigTestPath . '/config';
+
+        mkdir($configDir, 0777, true);
+
+        file_put_contents(
+            $configDir . '/app.php',
+            "<?php\n\nreturn [\n    'route_prefix' => 'admin',\n    'enabled' => true,\n];"
+        );
+
+        return $this->tempConfigTestPath;
+    }
+
+    private function createConfigTestProvider(string $tempBasePath): SliceServiceProvider
+    {
+        return new class($this->app, $tempBasePath) extends SliceServiceProvider {
+            private string $tempBasePath;
+
+            public function __construct($app, string $tempBasePath)
+            {
+                $this->tempBasePath = $tempBasePath;
+                parent::__construct($app);
+            }
+
+            public function configure(Slice $slice): void
+            {
+                $slice->setName('config-test-slice');
+            }
+
+            protected function getSliceBaseDir(): string
+            {
+                // Return a src subdirectory so dirname() gives us tempBasePath as the slice root
+                return $this->tempBasePath . '/src';
+            }
+        };
+    }
+
     #[Test]
     public function it_registers_a_slice_with_name(): void
     {
@@ -76,13 +134,24 @@ final class SliceServiceProviderTest extends TestCase
     }
 
     #[Test]
+    public function it_registers_config_during_register_phase(): void
+    {
+        $tempBasePath = $this->createConfigDirectory();
+        $provider = $this->createConfigTestProvider($tempBasePath);
+
+        $provider->register();
+
+        $this->assertSame('admin', config('config-test-slice::app.route_prefix'));
+        $this->assertTrue(config('config-test-slice::app.enabled'));
+    }
+
+    #[Test]
     public function it_boots_a_slice(): void
     {
         $provider = $this->createTestProvider();
         $provider->register();
 
         $provider->boot();
-
 
         $this->assertTrue(SliceRegistry::has('test-slice'));
     }
