@@ -37,11 +37,31 @@ trait RefreshAllDatabases
     protected ?string $refreshSlice = null;
 
     /**
-     * Track which slice connections have been migrated.
+     * Track which (connection, slice) pairs have been migrated.
+     * Key format: "{connection}:{sliceName}"
+     *
+     * Static so it persists across tests (migrations run once per test suite run).
      *
      * @var array<string, bool>
      */
-    protected static array $sliceConnectionsMigrated = [];
+    protected static array $slicesMigrated = [];
+
+    /**
+     * Track which connections have had their tables dropped.
+     *
+     * Static so it persists across tests (drop happens once before first migration).
+     *
+     * @var array<string, bool>
+     */
+    protected static array $sliceConnectionsDropped = [];
+
+    /**
+     * Track which connections have an active transaction in the current test.
+     * Reset at the start of each refreshSliceDatabases() call.
+     *
+     * @var array<string, bool>
+     */
+    protected array $activeSliceTransactions = [];
 
     protected function refreshDatabase(): void
     {
@@ -52,6 +72,8 @@ trait RefreshAllDatabases
 
     protected function refreshSliceDatabases(): void
     {
+        $this->activeSliceTransactions = [];
+
         if ($this->refreshSlice !== null)
         {
             $this->refreshSingleSliceDatabase($this->refreshSlice);
@@ -92,28 +114,33 @@ trait RefreshAllDatabases
         }
 
         $migrationPath = $slice->migrationPath();
+        $migrationKey = "{$connection}:{$sliceName}";
 
-        // Skip if already migrated in this test run
-        if (isset(static::$sliceConnectionsMigrated[$connection]))
+        if (!isset(static::$slicesMigrated[$migrationKey]))
         {
-            $this->beginSliceTransaction($connection);
+            // Drop all tables only once per connection (before any slice migrates on it)
+            if (!isset(static::$sliceConnectionsDropped[$connection]))
+            {
+                Schema::connection($connection)->dropAllTables();
+                static::$sliceConnectionsDropped[$connection] = true;
+            }
 
-            return;
+            Artisan::call('migrate', [
+                '--database' => $connection,
+                '--path' => $migrationPath,
+                '--realpath' => true,
+                '--force' => true,
+            ]);
+
+            static::$slicesMigrated[$migrationKey] = true;
         }
 
-        // Drop all tables and migrate fresh
-        Schema::connection($connection)->dropAllTables();
-
-        Artisan::call('migrate', [
-            '--database' => $connection,
-            '--path' => $migrationPath,
-            '--realpath' => true,
-            '--force' => true,
-        ]);
-
-        static::$sliceConnectionsMigrated[$connection] = true;
-
-        $this->beginSliceTransaction($connection);
+        // Begin a transaction for this connection only once per test
+        if (!isset($this->activeSliceTransactions[$connection]))
+        {
+            $this->beginSliceTransaction($connection);
+            $this->activeSliceTransactions[$connection] = true;
+        }
     }
 
     /**
@@ -140,6 +167,7 @@ trait RefreshAllDatabases
 
     protected static function resetSliceConnectionsMigrated(): void
     {
-        static::$sliceConnectionsMigrated = [];
+        static::$slicesMigrated = [];
+        static::$sliceConnectionsDropped = [];
     }
 }
