@@ -8,46 +8,46 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 
 use FullSmack\LaravelSlice\Command\SliceDefinitions;
+use FullSmack\LaravelSlice\Command\SliceMakeDefinitions;
 
 class MakeSlice extends Command
 {
     use SliceDefinitions;
+    use SliceMakeDefinitions;
 
     /**
-     * The name and signature of the console command.
-     *
      * @var string
      */
-    protected $signature = 'make:slice {sliceName}';
+    protected $signature = 'make:slice {sliceName} {--dir= : Subdirectory to create the slice in}';
 
     /**
-     * The console command description.
-     *
      * @var string
      */
     protected $description = 'Create a new slice';
 
-    /**
-     * Create a new command instance.
-     */
     public function __construct()
     {
         parent::__construct();
     }
 
     /**
-     * Execute the console command.
-     *
-     * @return void
+     * @return int
      */
     public function handle()
     {
-        $this->defineSliceUsingArgument();
+        /** @var string $sliceName */
+        $sliceName = $this->argument('sliceName');
 
-        if(File::exists($this->slicePath))
+        /** @var string|null $dirOption */
+        $dirOption = $this->option('dir');
+
+        $this->defineSlice($sliceName, $dirOption);
+
+        if (File::exists($this->slicePath()))
         {
             $this->error("Slice with name \"{$this->sliceName}\" already exists");
-            return;
+
+            return Command::FAILURE;
         }
 
         $directories = [
@@ -61,22 +61,24 @@ class MakeSlice extends Command
 
         foreach ($directories as $directory)
         {
-            File::makeDirectory("{$this->slicePath}/$directory", 0755, true, true);
+            File::makeDirectory($this->slicePath($directory), 0755, true, true);
         }
 
-        $slicePascalName = Str::studly($this->sliceName);
+        $slicePascalName = Str::studly($this->sliceFolderName);
 
         $stubPath = __DIR__ .'/../../stubs/SliceServiceProvider.stub';
 
         $serviceProviderContent = File::get($stubPath);
 
-        $serviceProviderContent = Str::replace(
-            ['{{sliceRootNamespace}}','{{slicePascalName}}', '{{sliceName}}'],
-            [$this->sliceRootNamespace, $slicePascalName, $this->sliceName],
+        $replaced = Str::replace(
+            ['{{sliceRootNamespace}}', '{{slicePascalName}}', '{{sliceName}}'],
+            [$this->sliceNamespaceBase(), $slicePascalName, $this->sliceName],
             $serviceProviderContent
         );
 
-        $serviceProviderPath = "{$this->slicePath}/src/{$slicePascalName}ServiceProvider.php";
+        $serviceProviderContent = is_array($replaced) ? implode('', $replaced) : $replaced;
+
+        $serviceProviderPath = $this->sliceSourcePath("{$slicePascalName}ServiceProvider.php");
 
         File::put($serviceProviderPath, $serviceProviderContent);
 
@@ -84,19 +86,24 @@ class MakeSlice extends Command
         $this->runComposerDumpAutoload();
 
         $this->info("Slice \"{$this->sliceName}\" created successfully.");
+
+        return Command::SUCCESS;
     }
 
-    private function updateComposerJson()
+    private function updateComposerJson(): void
     {
         $composerFile = base_path('composer.json');
         $composerData = File::json($composerFile);
 
-        $slicePascalName = Str::studly($this->sliceName);
+        $slicePascalName = Str::studly($this->sliceFolderName);
 
-        $sliceRoot = "{$this->sliceRootFolder}/{$this->sliceName}";
-        $namespace = "{$this->sliceRootNamespace}\\{$slicePascalName}";
+        // Use sliceProjectPath for filesystem path (e.g., "src/api/posts")
+        $sliceRoot = $this->sliceProjectPath();
 
-        $testNamespace = "{$this->sliceTestNamespace}\\{$slicePascalName}";
+        // Build namespace with full path consideration
+        $namespace = $this->sliceNamespace();
+
+        $testNamespace = $this->sliceTestNamespace();
 
         // Update autoload section
         if (!isset($composerData['autoload']['psr-4'][$namespace . '\\']))
@@ -112,7 +119,7 @@ class MakeSlice extends Command
 
         $providerClass = "{$namespace}\\{$slicePascalName}ServiceProvider";
 
-        if(config('laravel-slice.discovery.type') === 'composer')
+        if (config('laravel-slice.discovery.type') === 'composer')
         {
             // Update extra section for Laravel providers
             if (!isset($composerData['extra']['laravel']['providers']))
@@ -130,7 +137,7 @@ class MakeSlice extends Command
         file_put_contents($composerFile, json_encode($composerData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
-    protected function runComposerDumpAutoload()
+    protected function runComposerDumpAutoload(): void
     {
         $process = new \Symfony\Component\Process\Process(['composer', 'dump-autoload']);
         $process->setWorkingDirectory(base_path());

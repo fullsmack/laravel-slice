@@ -1,0 +1,15 @@
+parameters:
+  paths:
+    - ./src/
+    - ./tests/
+
+  level: 7
+
+  treatPhpDocTypesAsCertain: false
+
+  ignoreErrors:
+    # Orchestra Testbench's artisan() method returns PendingCommand|int
+    # but the int case only occurs in specific configurations
+    - message: '#Cannot call method (assertSuccessful|expectsOutput|assertFailed)\(\) on Illuminate\\Testing\\PendingCommand\|int#'
+      paths:
+        - tests/*

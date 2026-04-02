@@ -5,7 +5,7 @@ namespace FullSmack\LaravelSlice;
 
 use FullSmack\LaravelSlice\Slice;
 
-interface Feature
+interface Extension
 {
     public function register(Slice $slice): void;
 }

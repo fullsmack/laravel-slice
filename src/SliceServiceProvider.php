@@ -3,19 +3,22 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice;
 
+use ReflectionClass;
+use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceNotRegistered;
+use FullSmack\LaravelSlice\SliceRegistry;
+use FullSmack\LaravelSlice\Extension;
+use Symfony\Component\Finder\SplFileInfo;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
-use Illuminate\Filesystem\Filesystem;
-use Symfony\Component\Finder\SplFileInfo;
-use ReflectionClass;
-
-use FullSmack\LaravelSlice\Slice;
-use FullSmack\LaravelSlice\Feature;
 
 abstract class SliceServiceProvider extends ServiceProvider
 {
     protected Slice $slice;
+
+    /** @var ReflectionClass<self> */
     private ReflectionClass $reflector;
     private Filesystem $filesystem;
 
@@ -26,6 +29,9 @@ abstract class SliceServiceProvider extends ServiceProvider
         return new Slice();
     }
 
+    /**
+     * @return void
+     */
     public function register()
     {
         $this->reflector = $this->getReflector();
@@ -36,47 +42,59 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         $this->slice = $this->newSlice();
 
-        $this->slice->setBasePath($this->getSliceBaseDir());
+        $this->slice->setPath(dirname($this->getSliceBaseDir()));
 
-        $this->slice->setBaseNamespace($this->getSliceBaseNamespace());
+        $this->slice->setNamespace($this->getSliceNamespace());
 
         $this->configure($this->slice);
 
-        if($this->slice->name() === '')
+        if ($this->slice->name() === '')
         {
             throw SliceNotRegistered::becauseNameIsNotDefined();
         }
 
-        $this->sliceRegistered();
+        $this->registerConfig();
 
-        return $this;
+        SliceRegistry::register($this->slice);
+
+        $this->sliceRegistered();
     }
 
+    /**
+     * @return void
+     */
     public function boot()
     {
         $this->bootingSlice();
 
-        $this->registerConfig();
-
-        if($this->slice->hasRoutes())
+        if ($this->slice->hasRoutes())
         {
             $this->registerRoutes();
         }
 
-        if($this->slice->hasTranslations())
+        if ($this->slice->hasTranslations())
         {
             $this->registerTranslations();
         }
 
-        if($this->slice->hasViews())
+        if ($this->slice->hasViews())
         {
             $this->registerViews();
         }
 
-        $this->registerFeatures();
+        $this->registerExtensions();
 
-        if($this->app->runningInConsole())
+        $this->bindModelsToConnection();
+
+        if ($this->app->runningInConsole())
         {
+            $commands = $this->slice->commands();
+
+            if ($commands !== [])
+            {
+                $this->commands($commands);
+            }
+
             if($this->slice->hasMigrations())
             {
                 $this->registerMigrations();
@@ -84,20 +102,18 @@ abstract class SliceServiceProvider extends ServiceProvider
         }
 
         $this->sliceBooted();
-
-        return $this;
     }
 
     protected function registerConfig(): void
     {
-        $configDirectory = $this->slice->basePath('/../config');
+        $configDirectory = $this->slice->path('config');
 
-        if($this->filesystem->isDirectory($configDirectory))
+        if ($this->filesystem->isDirectory($configDirectory))
         {
             $files = $this->filesystem->allFiles($configDirectory.'/');
 
             Collection::make($files)
-                ->map(function (SplFileInfo $file): string {
+                ->map(static function (SplFileInfo $file): string {
                     return (string) Str::of($file->getRelativePathname())
                         ->before('.');
                 })
@@ -114,7 +130,12 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     protected function registerRoutes(): void
     {
-        $routesDirectory = $this->slice->basePath('/../routes');
+        $routesDirectory = $this->slice->path('routes');
+
+        if (!$this->filesystem->isDirectory($routesDirectory))
+        {
+            throw SliceNotRegistered::becauseRouteDirectoryDoesntExist($routesDirectory);
+        }
 
         $routeFiles = $this->directoryFiles($routesDirectory);
 
@@ -125,20 +146,32 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     protected function registerTranslations(): void
     {
-        $slicePath = $this->slice->basePath('/..');
+        $slicePath = $this->slice->path();
 
-        $hasLangDir = is_dir($slicePath .'/lang');
+        $hasLanguageDir = is_dir($slicePath .'/lang');
 
-        $langPath = $slicePath . ($hasLangDir ? '/lang' : '/resources/lang');
+        $languagePath = $hasLanguageDir ? '/lang' : '/resources/lang';
 
-        $this->loadTranslationsFrom($langPath, $this->slice->name());
+        $languageDirectory = $this->slice->path($languagePath);
 
-        $this->loadJsonTranslationsFrom($langPath, $this->slice->name());
+        if (!$this->filesystem->isDirectory($languageDirectory))
+        {
+            throw SliceNotRegistered::becauseTranslationDirectoryDoesntExist($languageDirectory);
+        }
+
+        $this->loadTranslationsFrom($languageDirectory, $this->slice->name());
+
+        $this->loadJsonTranslationsFrom($languageDirectory);
     }
 
     protected function registerViews(): void
     {
-        $viewDirectory = $this->slice->basePath('/../resources/views');
+        $viewDirectory = $this->slice->path('resources/views');
+
+        if (!$this->filesystem->isDirectory($viewDirectory))
+        {
+            throw SliceNotRegistered::becauseViewDirectoryDoesntExist($viewDirectory);
+        }
 
         $viewPaths = [
             $viewDirectory,
@@ -149,41 +182,71 @@ abstract class SliceServiceProvider extends ServiceProvider
 
     protected function registerMigrations(): void
     {
-        $migrationDirectory = $this->slice->basePath('/../database/migrations');
+        $migrationDirectory = $this->slice->path('database/migrations');
 
-        $this->loadMigrationsFrom($migrationDirectory);
+        if (!$this->filesystem->isDirectory($migrationDirectory))
+        {
+            throw SliceNotRegistered::becauseMigrationDirectoryDoesntExist($migrationDirectory);
+        }
+
+        // Only register globally if slice uses default connection
+        // Slices with custom connections are migrated via --slice or --all-slices
+        if (!$this->slice->usesConnection())
+        {
+            $this->loadMigrationsFrom($migrationDirectory);
+        }
     }
 
-    protected function registerFeatures(): void
+    protected function registerExtensions(): void
     {
-        foreach($this->slice->features() as $feature)
+        foreach ($this->slice->extensions() as $extension)
         {
-            if($feature instanceof Feature)
+            if ($extension instanceof Extension)
             {
-                $feature->register($this->slice);
+                $extension->register($this->slice);
             }
         }
     }
 
+    /**
+     * @param string $path
+     * @return Collection<int, string>
+     */
     private function directoryFiles(string $path): Collection
     {
+        if (!$this->filesystem->isDirectory($path))
+        {
+            return collect();
+        }
+
         return Collection::make($this->filesystem->files($path.'/'))
             ->map(
-                fn(SplFileInfo $file): string => $file->getRelativePathname()
+                static fn(SplFileInfo $file): string => $file->getRelativePathname()
             );
     }
 
+    /**
+     * @return ReflectionClass<self>
+     */
     protected function getReflector(): ReflectionClass
     {
+        /** @var ReflectionClass<self> */
         return new ReflectionClass($this::class);
     }
 
     protected function getSliceBaseDir(): string
     {
-        return dirname($this->reflector->getFileName());
+        $fileName = $this->reflector->getFileName();
+
+        if ($fileName === false)
+        {
+            throw new \RuntimeException('Unable to determine slice base directory');
+        }
+
+        return dirname($fileName);
     }
 
-    protected function getSliceBaseNamespace(): string
+    protected function getSliceNamespace(): string
     {
         return $this->reflector->getNamespaceName();
     }
@@ -206,5 +269,34 @@ abstract class SliceServiceProvider extends ServiceProvider
     public function sliceBooted(): void
     {
         //
+    }
+
+    /**
+     * Bind the slice's connection to configured model classes.
+     *
+     * This sets the default connection for all models configured via
+     * $slice->withConnection() to use the connection defined
+     * via $slice->withConnection().
+     *
+     * Models must use the UsesConnection trait for this to work.
+     */
+    protected function bindModelsToConnection(): void
+    {
+        $modelsToBind = $this->slice->modelsToBind();
+
+        if ($modelsToBind === [] || !$this->slice->usesConnection())
+        {
+            return;
+        }
+
+        $connection = $this->slice->connection();
+
+        foreach ($modelsToBind as $modelClass)
+        {
+            if (method_exists($modelClass, 'useConnection'))
+            {
+                $modelClass::useConnection($connection);
+            }
+        }
     }
 }

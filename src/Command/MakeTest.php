@@ -6,26 +6,38 @@ namespace FullSmack\LaravelSlice\Command;
 use Illuminate\Foundation\Console\TestMakeCommand;
 use Symfony\Component\Console\Input\InputOption;
 use Illuminate\Support\Str;
+use FullSmack\LaravelSlice\Path;
+use FullSmack\LaravelSlice\SliceNotRegistered;
 
 class MakeTest extends TestMakeCommand
 {
     use SliceDefinitions;
 
     /**
-     * The console command name.
-     *
-     * @var string
+     * @return bool|null
      */
-    protected $name = 'make:test';
-
-    protected $signature = 'make:test {name} {--force} {--unit} {--pest} {--slice=}';
-
     public function handle()
     {
-        $this->defineSliceUsingOption();
+        $sliceName = $this->option('slice');
 
-        parent::handle();
+        if (!$sliceName || !is_string($sliceName))
+        {
+            return parent::handle();
+        }
+
+        try {
+            $this->loadFromRegistry($sliceName);
+        }
+        catch (SliceNotRegistered $e)
+        {
+            $this->error($e->getMessage());
+
+            return false;
+        }
+
+        return parent::handle();
     }
+
     /**
      * Get the destination class path.
      *
@@ -34,17 +46,21 @@ class MakeTest extends TestMakeCommand
      */
     protected function getPath($name)
     {
-        if(!$this->sliceName)
+        if (!$this->runInSlice())
         {
             return parent::getPath($name);
         }
 
         $name = Str::replaceFirst($this->rootNamespace(), '', $name);
 
-        return "{$this->slicePath}/tests".
-            str_replace('\\', '/', $name).'.php';
+        return $this->slicePath('tests') . DIRECTORY_SEPARATOR .
+            Path::normalize($name) . '.php';
     }
 
+    /**
+     * @param string $rootNamespace
+     * @return string
+     */
     protected function getDefaultNamespace($rootNamespace)
     {
         return $rootNamespace;
@@ -57,28 +73,27 @@ class MakeTest extends TestMakeCommand
      */
     protected function rootNamespace()
     {
-        if(!isset($this->sliceName))
+        if (!$this->runInSlice())
         {
             return parent::rootNamespace();
         }
 
-        $slicePascalName = Str::studly($this->sliceName);
-
-        return "{$this->sliceTestNamespace}\\{$slicePascalName}";
+        return $this->sliceTestNamespace();
     }
 
     /**
-     * Get the console command options.
-     *
-     * @return array
+     * @return array<array{
+     *  0: string,
+     *  1: string|null,
+     *  2: int,
+     *  3: string,
+     * }>
      */
     protected function getOptions()
     {
-        return [
-            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the test already exists'],
-            ['unit', 'u', InputOption::VALUE_NONE, 'Create a unit test'],
-            ['pest', 'p', InputOption::VALUE_NONE, 'Create a Pest test'],
-            ['slice', 's', InputOption::VALUE_NONE, 'Create a test in a slice or module'],
-        ];
+        return array_merge(parent::getOptions(), [
+            ['slice', 's', InputOption::VALUE_OPTIONAL, 'Create a test in a slice or module'],
+            ['dir', null, InputOption::VALUE_OPTIONAL, 'Subdirectory to create the test in'],
+        ]);
     }
 }
