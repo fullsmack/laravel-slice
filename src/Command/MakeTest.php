@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Command;
 
-use Illuminate\Console\Command;
 use Illuminate\Foundation\Console\TestMakeCommand;
 use Symfony\Component\Console\Input\InputOption;
 use Illuminate\Support\Str;
@@ -13,16 +12,6 @@ use FullSmack\LaravelSlice\SliceNotRegistered;
 class MakeTest extends TestMakeCommand
 {
     use SliceDefinitions;
-
-    /**
-     * @var string
-     */
-    protected $name = 'make:test';
-
-    /**
-     * @var string
-     */
-    protected $signature = 'make:test {name} {--force} {--unit} {--pest} {--phpunit} {--slice=} {--dir=}';
 
     /**
      * @return bool|null
@@ -102,13 +91,9 @@ class MakeTest extends TestMakeCommand
      */
     protected function getOptions()
     {
-        return [
-            ['force', 'f', InputOption::VALUE_NONE, 'Create the class even if the test already exists'],
-            ['unit', 'u', InputOption::VALUE_NONE, 'Create a unit test'],
-            ['pest', 'p', InputOption::VALUE_NONE, 'Create a Pest test'],
-            ['phpunit', null, InputOption::VALUE_NONE, 'Create a PHPUnit test'],
+        return array_merge(parent::getOptions(), [
             ['slice', 's', InputOption::VALUE_OPTIONAL, 'Create a test in a slice or module'],
             ['dir', null, InputOption::VALUE_OPTIONAL, 'Subdirectory to create the test in'],
-        ];
+        ]);
     }
 }
