@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\View;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceServiceProvider;
-use FullSmack\LaravelSlice\SliceNotRegistered;
+use FullSmack\LaravelSlice\SliceMisconfigured;
 
 final class SliceFileLoadingTest extends TestCase
 {
@@ -85,7 +85,7 @@ final class SliceFileLoadingTest extends TestCase
     #[Test]
     public function it_throws_exception_when_routes_directory_missing(): void
     {
-        $this->expectException(SliceNotRegistered::class);
+        $this->expectException(SliceMisconfigured::class);
         $this->expectExceptionMessage('Routes directory');
 
         $provider = $this->createProviderWithTempPath(function($slice) {
@@ -116,7 +116,7 @@ final class SliceFileLoadingTest extends TestCase
     #[Test]
     public function it_throws_exception_when_views_directory_missing(): void
     {
-        $this->expectException(\FullSmack\LaravelSlice\SliceNotRegistered::class);
+        $this->expectException(SliceMisconfigured::class);
         $this->expectExceptionMessage('Views directory');
 
         $provider = $this->createProviderWithTempPath(function($slice) {
@@ -209,7 +209,7 @@ final class SliceFileLoadingTest extends TestCase
 
         $provider = $this->createProviderWithTempPath(function($slice) {
             $slice->useMigrations(); // Enable migrations for this test
-            $slice->withConnection('custom-connection'); // Also use a custom connection
+            $slice->useConnection('custom-connection'); // Also use a custom connection
         });
         $provider->register();
         $provider->boot();
@@ -223,6 +223,45 @@ final class SliceFileLoadingTest extends TestCase
         $actualPathsResolved = array_map('realpath', $paths);
 
         $this->assertNotContains($expectedPath, $actualPathsResolved, 'Migration directory should NOT be registered globally when slice uses a custom connection');
+    }
+
+    #[Test]
+    public function it_ignores_non_php_files_and_keeps_dotted_names_in_the_config_directory(): void
+    {
+        $configDir = $this->tempSliceDir . '/config';
+        File::makeDirectory($configDir . '/nested', 0755, true);
+        File::put($configDir . '/.gitkeep', '');
+        File::put($configDir . '/README.md', '# Config');
+        File::put($configDir . '/app.settings.php', "<?php\nreturn ['key' => 'dotted'];");
+        File::put($configDir . '/nested/ignored.php', "<?php\nreturn ['key' => 'nested'];");
+
+        $provider = $this->createProviderWithTempPath();
+        $provider->register();
+
+        $this->assertSame('dotted', config('file-test::app.settings.key'));
+        $this->assertNull(config('file-test::nested/ignored'));
+    }
+
+    #[Test]
+    public function it_only_loads_php_files_from_the_routes_directory(): void
+    {
+        $routesDir = $this->tempSliceDir . '/routes';
+        File::makeDirectory($routesDir, 0755, true);
+        File::put($routesDir . '/.gitkeep', '');
+        File::put($routesDir . '/README.md', 'This text must not be output');
+        File::put($routesDir . '/web.php', "<?php\nRoute::get('/slice-route', fn () => 'ok');");
+
+        $provider = $this->createProviderWithTempPath(function ($slice) {
+            $slice->useRoutes();
+        });
+        $provider->register();
+
+        ob_start();
+        $provider->boot();
+        $output = ob_get_clean();
+
+        $this->assertSame('', $output);
+        $this->get('/slice-route')->assertOk()->assertSee('ok');
     }
 
     private function createProviderWithTempPath(?callable $configureCallback = null): SliceServiceProvider
@@ -241,7 +280,7 @@ final class SliceFileLoadingTest extends TestCase
 
             public function configure(Slice $slice): void
             {
-                $slice->setName('file-test');
+                $slice->setIdentifier('file-test');
 
                 if ($this->configureCallback)
                 {

@@ -50,7 +50,7 @@ final class SliceDefinitionsTest extends TestCase
     {
         // Create and register a slice
         $slice = (new Slice())
-            ->setName($this->testSliceName)
+            ->setIdentifier($this->testSliceName)
             ->setPath($this->testSlicePath)
             ->setNamespace('Domain\\TestSlice');
 
@@ -324,7 +324,7 @@ final class SliceDefinitionsTest extends TestCase
     public function it_checks_slice_uses_connection(): void
     {
         $slice = (new Slice())
-            ->setName($this->testSliceName)
+            ->setIdentifier($this->testSliceName)
             ->setPath($this->testSlicePath)
             ->setNamespace('Domain\\TestSlice')
             ->useConnection('mysql');
@@ -369,7 +369,7 @@ final class SliceDefinitionsTest extends TestCase
     public function it_returns_null_connection_when_slice_does_not_use_connection(): void
     {
         $slice = (new Slice())
-            ->setName($this->testSliceName)
+            ->setIdentifier($this->testSliceName)
             ->setPath($this->testSlicePath)
             ->setNamespace('Domain\\TestSlice');
 
@@ -648,7 +648,7 @@ final class SliceDefinitionsTest extends TestCase
 
         // Register the slice
         $slice = (new Slice())
-            ->setName($sliceName)
+            ->setIdentifier($sliceName)
             ->setPath($absolutePath)
             ->setNamespace($namespace);
 
@@ -793,7 +793,7 @@ final class SliceDefinitionsTest extends TestCase
 
         // Register the slice with custom (non-conventional) configuration
         $slice = (new Slice())
-            ->setName($sliceName)
+            ->setIdentifier($sliceName)
             ->setPath($absolutePath)
             ->setNamespace($namespace);
 

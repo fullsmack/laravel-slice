@@ -6,7 +6,6 @@ namespace FullSmack\LaravelSlice\Command;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 use NunoMaduro\Collision\Adapters\Laravel\Commands\TestCommand;
-use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 
 /**
@@ -23,8 +22,7 @@ class TestSlice extends Command
      * @var string
      */
     protected $signature = 'slice:test
-        {sliceName : The name of the slice to test}
-        {--dir= : Subdirectory where the slice is located}
+        {sliceName : The identifier of the slice to test}
         {--without-tty : Disable output to TTY}
         {--compact : Indicates whether the compact printer should be used}
         {--coverage : Indicates whether code coverage information should be collected}
@@ -65,8 +63,14 @@ class TestSlice extends Command
             return static::FAILURE;
         }
 
-        $slice = SliceRegistry::get($sliceName);
-        $testPath = $slice->path('tests');
+        if (!class_exists(TestCommand::class))
+        {
+            $this->error('slice:test requires nunomaduro/collision. Install it with: composer require --dev nunomaduro/collision');
+
+            return static::FAILURE;
+        }
+
+        $testPath = $this->slicePath('tests');
 
         if (!is_dir($testPath))
         {

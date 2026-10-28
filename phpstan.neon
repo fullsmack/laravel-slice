@@ -10,6 +10,6 @@ parameters:
   ignoreErrors:
     # Orchestra Testbench's artisan() method returns PendingCommand|int
     # but the int case only occurs in specific configurations
-    - message: '#Cannot call method (assertSuccessful|expectsOutput|assertFailed)\(\) on Illuminate\\Testing\\PendingCommand\|int#'
+    - message: '#Cannot call method (assertSuccessful|expectsOutput|expectsOutputToContain|assertFailed)\(\) on Illuminate\\Testing\\PendingCommand\|int#'
       paths:
         - tests/*

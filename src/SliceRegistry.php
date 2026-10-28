@@ -49,13 +49,16 @@ abstract class SliceRegistry
     public static function sliceForMigrationPath(string $path): ?Slice
     {
         // Normalize path separators for consistent comparison
-        $normalizedPath = str_replace('\\', '/', $path);
+        $normalizedPath = rtrim(Path::normalize($path), '/');
 
         foreach (self::$registry as $slice)
         {
-            $normalizedMigrationPath = str_replace('\\', '/', $slice->migrationPath());
+            $normalizedMigrationPath = rtrim(Path::normalize($slice->migrationPath()), '/');
 
-            if (str_starts_with($normalizedPath, $normalizedMigrationPath))
+            // Match the directory itself or anything inside it, but not sibling
+            // directories that merely share the prefix (e.g. "migrations-archive").
+            if ($normalizedPath === $normalizedMigrationPath
+                || str_starts_with($normalizedPath, $normalizedMigrationPath . '/'))
             {
                 return $slice;
             }

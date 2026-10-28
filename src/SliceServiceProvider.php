@@ -4,15 +4,15 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice;
 
 use ReflectionClass;
+use FullSmack\LaravelSlice\Database\UsesConnection;
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceMisconfigured;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\SliceRegistry;
-use FullSmack\LaravelSlice\Extension;
 use Symfony\Component\Finder\SplFileInfo;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Str;
 
 abstract class SliceServiceProvider extends ServiceProvider
 {
@@ -48,9 +48,9 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         $this->configure($this->slice);
 
-        if ($this->slice->name() === '')
+        if ($this->slice->identifier() === '')
         {
-            throw SliceNotRegistered::becauseNameIsNotDefined();
+            throw SliceNotRegistered::becauseIdentifierIsNotDefined();
         }
 
         $this->registerConfig();
@@ -104,28 +104,19 @@ abstract class SliceServiceProvider extends ServiceProvider
         $this->sliceBooted();
     }
 
+    /**
+     * Merge each `config/*.php` file into the `{identifier}::{file}` config key.
+     */
     protected function registerConfig(): void
     {
         $configDirectory = $this->slice->path('config');
 
-        if ($this->filesystem->isDirectory($configDirectory))
-        {
-            $files = $this->filesystem->allFiles($configDirectory.'/');
-
-            Collection::make($files)
-                ->map(static function (SplFileInfo $file): string {
-                    return (string) Str::of($file->getRelativePathname())
-                        ->before('.');
-                })
-                ->each(function(string $configFileName)
-                    use($configDirectory): void {
-                        $this->mergeConfigFrom(
-                            "{$configDirectory}/{$configFileName}.php",
-                            "{$this->slice->name()}::{$configFileName}"
-                        );
-                }
+        $this->phpFiles($configDirectory)->each(function (SplFileInfo $file): void {
+            $this->mergeConfigFrom(
+                $file->getPathname(),
+                "{$this->slice->identifier()}::{$file->getFilenameWithoutExtension()}"
             );
-        }
+        });
     }
 
     protected function registerRoutes(): void
@@ -134,32 +125,29 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         if (!$this->filesystem->isDirectory($routesDirectory))
         {
-            throw SliceNotRegistered::becauseRouteDirectoryDoesntExist($routesDirectory);
+            throw SliceMisconfigured::becauseRouteDirectoryDoesntExist($routesDirectory);
         }
 
-        $routeFiles = $this->directoryFiles($routesDirectory);
-
-        $routeFiles->each(function($routeFile) use($routesDirectory): void {
-            $this->loadRoutesFrom("{$routesDirectory}/{$routeFile}");
+        $this->phpFiles($routesDirectory)->each(function (SplFileInfo $file): void {
+            $this->loadRoutesFrom($file->getPathname());
         });
     }
 
     protected function registerTranslations(): void
     {
-        $slicePath = $this->slice->path();
-
-        $hasLanguageDir = is_dir($slicePath .'/lang');
-
-        $languagePath = $hasLanguageDir ? '/lang' : '/resources/lang';
-
-        $languageDirectory = $this->slice->path($languagePath);
+        $languageDirectory = $this->slice->path('lang');
 
         if (!$this->filesystem->isDirectory($languageDirectory))
         {
-            throw SliceNotRegistered::becauseTranslationDirectoryDoesntExist($languageDirectory);
+            $languageDirectory = $this->slice->path('resources/lang');
         }
 
-        $this->loadTranslationsFrom($languageDirectory, $this->slice->name());
+        if (!$this->filesystem->isDirectory($languageDirectory))
+        {
+            throw SliceMisconfigured::becauseTranslationDirectoryDoesntExist($languageDirectory);
+        }
+
+        $this->loadTranslationsFrom($languageDirectory, $this->slice->identifier());
 
         $this->loadJsonTranslationsFrom($languageDirectory);
     }
@@ -170,23 +158,19 @@ abstract class SliceServiceProvider extends ServiceProvider
 
         if (!$this->filesystem->isDirectory($viewDirectory))
         {
-            throw SliceNotRegistered::becauseViewDirectoryDoesntExist($viewDirectory);
+            throw SliceMisconfigured::becauseViewDirectoryDoesntExist($viewDirectory);
         }
 
-        $viewPaths = [
-            $viewDirectory,
-        ];
-
-        $this->loadViewsFrom($viewPaths, $this->slice->name());
+        $this->loadViewsFrom($viewDirectory, $this->slice->identifier());
     }
 
     protected function registerMigrations(): void
     {
-        $migrationDirectory = $this->slice->path('database/migrations');
+        $migrationDirectory = $this->slice->migrationPath();
 
         if (!$this->filesystem->isDirectory($migrationDirectory))
         {
-            throw SliceNotRegistered::becauseMigrationDirectoryDoesntExist($migrationDirectory);
+            throw SliceMisconfigured::becauseMigrationDirectoryDoesntExist($migrationDirectory);
         }
 
         // Only register globally if slice uses default connection
@@ -201,28 +185,26 @@ abstract class SliceServiceProvider extends ServiceProvider
     {
         foreach ($this->slice->extensions() as $extension)
         {
-            if ($extension instanceof Extension)
-            {
-                $extension->register($this->slice);
-            }
+            $extension->register($this->slice);
         }
     }
 
     /**
-     * @param string $path
-     * @return Collection<int, string>
+     * The `.php` files directly inside a directory (non-recursive).
+     * Other files such as `.gitkeep` or `README.md` are ignored.
+     *
+     * @return Collection<int, SplFileInfo>
      */
-    private function directoryFiles(string $path): Collection
+    private function phpFiles(string $directory): Collection
     {
-        if (!$this->filesystem->isDirectory($path))
+        if (!$this->filesystem->isDirectory($directory))
         {
-            return collect();
+            return new Collection();
         }
 
-        return Collection::make($this->filesystem->files($path.'/'))
-            ->map(
-                static fn(SplFileInfo $file): string => $file->getRelativePathname()
-            );
+        return Collection::make($this->filesystem->files($directory))
+            ->filter(static fn (SplFileInfo $file): bool => $file->getExtension() === 'php')
+            ->values();
     }
 
     /**
@@ -251,34 +233,33 @@ abstract class SliceServiceProvider extends ServiceProvider
         return $this->reflector->getNamespaceName();
     }
 
-    public function registeringSlice(): void
+    protected function registeringSlice(): void
     {
         //
     }
 
-    public function sliceRegistered(): void
+    protected function sliceRegistered(): void
     {
         //
     }
 
-    public function bootingSlice(): void
+    protected function bootingSlice(): void
     {
         //
     }
 
-    public function sliceBooted(): void
+    protected function sliceBooted(): void
     {
         //
     }
 
     /**
-     * Bind the slice's connection to configured model classes.
-     *
-     * This sets the default connection for all models configured via
-     * $slice->withConnection() to use the connection defined
-     * via $slice->withConnection().
+     * Bind the slice's connection to the model classes passed to
+     * $slice->useConnection($connection, $models).
      *
      * Models must use the UsesConnection trait for this to work.
+     *
+     * @throws SliceMisconfigured when a model does not use the UsesConnection trait
      */
     protected function bindModelsToConnection(): void
     {
@@ -289,14 +270,21 @@ abstract class SliceServiceProvider extends ServiceProvider
             return;
         }
 
+        /** @var string $connection usesConnection() guarantees a string or an exception */
         $connection = $this->slice->connection();
 
         foreach ($modelsToBind as $modelClass)
         {
-            if (method_exists($modelClass, 'useConnection'))
+            if (!in_array(UsesConnection::class, class_uses_recursive($modelClass), true))
             {
-                $modelClass::useConnection($connection);
+                throw SliceMisconfigured::becauseModelDoesNotUseConnectionTrait(
+                    $this->slice->identifier(),
+                    $modelClass,
+                );
             }
+
+            /** @phpstan-ignore staticMethod.notFound (verified above via the UsesConnection trait) */
+            $modelClass::useConnection($connection);
         }
     }
 }

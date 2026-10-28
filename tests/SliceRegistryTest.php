@@ -14,7 +14,7 @@ final class SliceRegistryTest extends TestCase
     #[Test]
     public function it_registers_slice_to_registry(): void
     {
-        $slice = (new Slice())->setName('registry-test');
+        $slice = (new Slice())->setIdentifier('registry-test');
 
         SliceRegistry::register($slice);
 
@@ -25,8 +25,8 @@ final class SliceRegistryTest extends TestCase
     #[Test]
     public function it_gets_all_registered_slices(): void
     {
-        $slice1 = (new Slice())->setName('slice-one');
-        $slice2 = (new Slice())->setName('slice-two');
+        $slice1 = (new Slice())->setIdentifier('slice-one');
+        $slice2 = (new Slice())->setIdentifier('slice-two');
 
         SliceRegistry::register($slice1);
         SliceRegistry::register($slice2);
@@ -49,7 +49,7 @@ final class SliceRegistryTest extends TestCase
     #[Test]
     public function it_clears_registry(): void
     {
-        $slice = (new Slice())->setName('to-clear');
+        $slice = (new Slice())->setIdentifier('to-clear');
         SliceRegistry::register($slice);
 
         $this->assertTrue(SliceRegistry::has('to-clear'));
@@ -69,8 +69,8 @@ final class SliceRegistryTest extends TestCase
     #[Test]
     public function it_overwrites_existing_slice_with_same_name(): void
     {
-        $slice1 = (new Slice())->setName('duplicate');
-        $slice2 = (new Slice())->setName('duplicate');
+        $slice1 = (new Slice())->setIdentifier('duplicate');
+        $slice2 = (new Slice())->setIdentifier('duplicate');
 
         SliceRegistry::register($slice1);
         SliceRegistry::register($slice2);

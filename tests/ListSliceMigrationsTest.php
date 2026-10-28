@@ -40,12 +40,12 @@ final class ListSliceMigrationsTest extends TestCase
         mkdir($slice2Path, 0777, true);
 
         $slice1 = (new Slice())
-            ->setName('slice-one')
+            ->setIdentifier('slice-one')
             ->setPath($slice1Path)
             ->useConnection('connection-one');
 
         $slice2 = (new Slice())
-            ->setName('slice-two')
+            ->setIdentifier('slice-two')
             ->setPath($slice2Path);
 
         SliceRegistry::register($slice1);
@@ -59,6 +59,24 @@ final class ListSliceMigrationsTest extends TestCase
         $this->assertStringContainsString('slice-two', $output);
         $this->assertStringContainsString('connection-one', $output);
         $this->assertStringContainsString('(default)', $output);
+    }
+
+    #[Test]
+    public function shows_missing_config_instead_of_crashing(): void
+    {
+        SliceRegistry::register(
+            (new Slice())
+                ->setIdentifier('misconfigured')
+                ->setPath($this->tempPath . '/misconfigured')
+                ->useConnection()
+        );
+
+        $exitCode = Artisan::call('slice:list-migrations');
+        $output = Artisan::output();
+
+        $this->assertEquals(0, $exitCode);
+        $this->assertStringContainsString('misconfigured', $output);
+        $this->assertStringContainsString('(missing config)', $output);
     }
 
     #[Test]
@@ -82,11 +100,11 @@ final class ListSliceMigrationsTest extends TestCase
         mkdir($sliceWithoutMigrations, 0777, true);
 
         $slice1 = (new Slice())
-            ->setName('with-migrations')
+            ->setIdentifier('with-migrations')
             ->setPath($sliceWithMigrations);
 
         $slice2 = (new Slice())
-            ->setName('without-migrations')
+            ->setIdentifier('without-migrations')
             ->setPath($sliceWithoutMigrations);
 
         SliceRegistry::register($slice1);

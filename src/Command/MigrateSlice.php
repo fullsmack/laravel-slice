@@ -9,6 +9,7 @@ use Illuminate\Database\Migrations\Migrator;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\File;
+use FullSmack\LaravelSlice\SliceException;
 use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\SliceRegistry;
 
@@ -31,8 +32,7 @@ class MigrateSlice extends MigrateCommand
         {--step : Force the migrations to be run so they can be rolled back individually}
         {--graceful : Return a successful exit code even if an error occurs}
         {--slice= : Run migrations for a specific slice}
-        {--all-slices : Run migrations for all registered slices}
-        {--dir= : Subdirectory where the slice is located}';
+        {--all-slices : Run migrations for all registered slices}';
 
     /**
      * @var string
@@ -102,7 +102,7 @@ class MigrateSlice extends MigrateCommand
 
         foreach ($slices as $slice)
         {
-            $this->info("Migrating slice: {$slice->name()}...");
+            $this->info("Migrating slice: {$slice->identifier()}...");
 
             $migrationPath = $slice->migrationPath();
 
@@ -113,8 +113,23 @@ class MigrateSlice extends MigrateCommand
                 continue;
             }
 
+            try {
+                $connection = $slice->connection();
+            }
+            catch (SliceException $e)
+            {
+                $this->error($e->getMessage());
+
+                if ($this->option('graceful'))
+                {
+                    continue;
+                }
+
+                return Command::FAILURE;
+            }
+
             $exitCode = Artisan::call('migrate', [
-                '--database' => $slice->connection(),
+                '--database' => $connection,
                 '--path' => $migrationPath,
                 '--realpath' => true,
                 '--force' => $this->option('force'),
@@ -189,11 +204,12 @@ class MigrateSlice extends MigrateCommand
         }
 
         // Use slice connection if configured, otherwise allow --database or default
-        $connection = $this->sliceUsesConnection() ? $this->sliceConnection() : $this->option('database');
-
-        if ($this->sliceUsesConnection() && !$connection)
+        try {
+            $connection = $this->sliceUsesConnection() ? $this->sliceConnection() : $this->option('database');
+        }
+        catch (SliceException $e)
         {
-            $this->error("Slice '{$this->sliceName}' is configured to use a connection but no connection is defined. Use ->useConnection('connection-name') when configuring the slice.");
+            $this->error($e->getMessage());
 
             return Command::FAILURE;
         }
@@ -202,7 +218,8 @@ class MigrateSlice extends MigrateCommand
                 '--path' => $migrationPath,
                 '--database' => $connection,
                 '--force' => $this->option('force'),
-                '--realpath' => $this->option('realpath'),
+                // The slice migration path is always absolute
+                '--realpath' => true,
                 '--schema-path' => $this->option('schema-path'),
                 '--pretend' => $this->option('pretend'),
                 '--seed' => $this->option('seed'),

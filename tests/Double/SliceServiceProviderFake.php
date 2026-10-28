@@ -24,18 +24,18 @@ final class SliceServiceProviderFake extends SliceServiceProvider
 
     public function configure(Slice $slice): void
     {
-        $slice->setName($this->sliceName);
+        $slice->setIdentifier($this->sliceName);
 
         if ($this->useConnection)
         {
-            $slice->withConnection($this->connection, $this->modelClasses);
+            $slice->useConnection($this->connection, $this->modelClasses);
         }
     }
 
     /**
      * @param array<class-string<\Illuminate\Database\Eloquent\Model>> $models
      */
-    public function withConnection(?string $connection = null, array $models = []): static
+    public function useConnection(?string $connection = null, array $models = []): static
     {
         $this->useConnection = true;
         $this->connection = $connection;

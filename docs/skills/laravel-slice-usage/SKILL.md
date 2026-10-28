@@ -22,15 +22,16 @@ Laravel Slice provides modular architecture for Laravel applications by organizi
 **Slice Structure**: Each slice lives in the configured root folder (default: `src/`) with this layout:
 ```
 src/slice-name/
-├── config/                 # Auto-registered as slice-name::
-├── resources/views/        # Referenced as slice-name::view.name
-├── lang/                   # Referenced as slice-name::file.key
-├── routes/                 # Route definitions
+├── config/                 # Auto-registered as slice-identifier::
+├── resources/views/        # Referenced as slice-identifier::view.name
+├── lang/                   # Referenced as slice-identifier::file.key
+├── routes/                 # Route definitions (*.php)
 ├── database/migrations/    # Slice migrations
+├── tests/                  # Slice tests
 └── src/                    # PSR-4 classes
 ```
 
-**Namespace Pattern**: All slice resources use `slice-name::` prefix:
+**Namespace Pattern**: All slice resources use the `slice-identifier::` prefix:
 - Config: `config('pizza::settings.key')`
 - Translations: `trans('pizza::messages.welcome')`
 - Views: `view('pizza::emails.receipt')`
@@ -40,66 +41,76 @@ src/slice-name/
 ### Nested Slices
 Slices can be organized in subfolders for logical grouping (e.g., grouping UI slices):
 ```bash
-php artisan make:slice posts --dir=api
+php artisan make:slice api/posts
+# or: php artisan make:slice posts --dir=api
 # Creates: src/api/posts/
-# Slice name: api.posts (auto-generated with dot notation)
+# Slice identifier: api.posts (auto-generated with dot notation)
 ```
 
-Nested slices use **dot notation** for their names by default, making them distinct from path separators and compatible with Laravel's naming conventions.
+Nested slices use **dot notation** for their identifiers, making them distinct from path separators and compatible with Laravel's naming conventions.
 
-### Slice Names
+### Slice Identifiers
 - **Must be unique** across the entire project
 - **Can be set to any string** in the service provider's `configure()` method
 - **Auto-generated** from filesystem path for nested slices (e.g., `api/posts` → `api.posts`)
-- **Independent from filesystem location** - you can name a slice anything regardless of where it lives
+- **Independent from filesystem location** - you can identify a slice by anything regardless of where it lives
 
 ```php
-// Manually override the auto-generated name
+// Manually override the auto-generated identifier
 public function configure(Slice $slice): void
 {
-    $slice->setName('custom-name'); // Any unique name
+    $slice->setIdentifier('custom-identifier'); // Any unique identifier
 }
 ```
 
-### PSR-4 Namespaces vs Slice Names
-The **slice name** (used for Laravel services) is **completely independent** from the **PSR-4 namespace** (used for PHP class autoloading):
+`setName()`, `name()` and `withConnection()` are deprecated aliases of `setIdentifier()`, `identifier()` and `useConnection()`. Don't use them in new code.
 
-- **Slice name**: Used for `config('blog::...')`, `view('blog::...')`, CLI commands
-- **PSR-4 namespace**: Derived from filesystem location and config settings (e.g., `Slice\Api\Posts`) when created but on the namespace of the location of each slice's service provider after the slice is configured.
+### PSR-4 Namespaces vs Slice Identifiers
+The **slice identifier** (used for Laravel services) is **completely independent** from the **PSR-4 namespace** (used for PHP class autoloading):
 
-They don't need to match - a slice at `src/api/posts/` with namespace `Slice\Api\Posts` can be named `news` or any other unique identifier.
+- **Slice identifier**: Used for `config('blog::...')`, `view('blog::...')`, CLI commands
+- **PSR-4 namespace**: Derived from filesystem location and config settings (e.g., `Slice\Api\Posts`) when created, but taken from the namespace of each slice's service provider after the slice is configured.
+
+They don't need to match - a slice at `src/api/posts/` with namespace `Slice\Api\Posts` can be identified as `news` or any other unique identifier.
 
 ## Available Commands
 
 ### Create a Slice
 ```bash
-php artisan make:slice {sliceName} [--dir=subdirectory]
+php artisan make:slice {identifier} [--dir=subdirectory]
 ```
 Creates full slice structure with service provider and auto-registers in `composer.json`.
 
 ### Create Slice Migration
 ```bash
-php artisan make:migration {name} --slice={sliceName} [--create=table] [--table=table] [--dir=subdirectory]
+php artisan make:migration {name} --slice={identifier} [--create=table] [--table=table]
 ```
-Generates migration in slice's `database/migrations/` directory with connection support.
+Generates migration in slice's `database/migrations/` directory using the `SliceMigration` trait.
 
 ### Run Slice Migrations
 ```bash
-php artisan migrate --slice={sliceName} [--dir=subdirectory]
+php artisan migrate --slice={identifier}
+php artisan migrate --all-slices
 ```
-Executes migrations for a specific slice. Automatically uses slice connection if configured.
+`--slice` executes migrations for one slice, using the slice connection if configured. `--all-slices` runs the default migrations and then every slice with its own connection.
 
 ### Create Slice Component
 ```bash
-php artisan make:component {name} --slice={sliceName} [--dir=subdirectory]
+php artisan make:component {name} --slice={identifier}
 ```
 Creates view component in slice namespace with proper view path resolution.
 
 ### Create Slice Test
 ```bash
-php artisan make:test {name} --slice={sliceName} [--unit] [--pest] [--dir=subdirectory]
+php artisan make:test {name} --slice={identifier} [--unit] [--pest]
 ```
 Scaffolds test in slice's `tests/` directory with correct namespace.
+
+### Other
+```bash
+php artisan slice:list-migrations     # Slices, connections and migration paths
+php artisan slice:test {identifier}   # Run one slice's tests (needs nunomaduro/collision)
+```
 
 ## Slice Configuration Patterns
 
@@ -112,7 +123,7 @@ final class OrderServiceProvider extends SliceServiceProvider
 {
     public function configure(Slice $slice): void
     {
-        $slice->setName('order')
+        $slice->setIdentifier('order')
             ->useRoutes()
             ->useViews()
             ->useTranslations()
@@ -125,7 +136,7 @@ final class OrderServiceProvider extends SliceServiceProvider
 ```php
 public function configure(Slice $slice): void
 {
-    $slice->setName('order')
+    $slice->setIdentifier('order')
         ->useRoutes()
         ->withCommands([
             \Slice\Order\Console\SyncOrders::class,
@@ -137,9 +148,9 @@ public function configure(Slice $slice): void
 ```php
 public function configure(Slice $slice): void
 {
-    $slice->setName('cookbook')
+    $slice->setIdentifier('cookbook')
         ->useMigrations()
-        ->withConnection('cookbook');
+        ->useConnection('cookbook');
 }
 ```
 
@@ -147,9 +158,9 @@ public function configure(Slice $slice): void
 ```php
 public function configure(Slice $slice): void
 {
-    $slice->setName('cookbook')
+    $slice->setIdentifier('cookbook')
         ->useMigrations()
-        ->withConnection('cookbook', [
+        ->useConnection('cookbook', [
             \Slice\Cookbook\Models\Recipe::class,
             \Slice\Cookbook\Models\Ingredient::class,
         ]);
@@ -160,7 +171,7 @@ public function configure(Slice $slice): void
 ```php
 public function configure(Slice $slice): void
 {
-    $slice->setName('order')
+    $slice->setIdentifier('order')
         ->useRoutes()
         ->withExtension(new CustomExtension())
         ->withExtension(new AnotherExtension());
@@ -170,11 +181,11 @@ public function configure(Slice $slice): void
 ## Database Connections
 
 **Connection Resolution Order**:
-1. Explicit argument: `withConnection('connection-name')`
-2. Slice config: Value from `{sliceName}::database.default` when `withConnection()` called without argument
-3. Application default when `withConnection()` not used
+1. Explicit argument: `useConnection('connection-name')`
+2. Slice config: Value from `{identifier}::database.default` when `useConnection()` called without argument
+3. Application default when `useConnection()` not used
 
-**Models**: Use `UsesConnection` trait for automatic connection binding:
+**Models**: Bound models must use the `UsesConnection` trait (otherwise booting throws `SliceMisconfigured`):
 ```php
 use FullSmack\LaravelSlice\Database\UsesConnection;
 
@@ -203,20 +214,17 @@ return new class extends Migration
 
 ## Testing Slices
 
-Use `RefreshSliceDatabase` trait for slice-specific test database handling:
+Use `RefreshAllDatabases` in place of Laravel's `RefreshDatabase`. It refreshes the default database and every slice connection, and wraps each test in transactions:
 
 ```php
-use FullSmack\LaravelSlice\Testing\RefreshSliceDatabase;
+use FullSmack\LaravelSlice\Testing\RefreshAllDatabases;
 
 final class RecipeTest extends TestCase
 {
-    use RefreshSliceDatabase;
+    use RefreshAllDatabases;
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-        $this->refreshSlice('pizza');
-    }
+    // Optional: only refresh these slices (plus the default database)
+    protected string|array|null $refreshSlice = 'cookbook';
 }
 ```
 
@@ -227,26 +235,29 @@ final class RecipeTest extends TestCase
 | Create slice | `make:slice pizza` | Scaffolds structure + service provider |
 | Slice migration | `make:migration create_orders --slice=pizza` | Uses slice path |
 | Run slice migrations | `migrate --slice=pizza` | Uses slice connection if set |
+| Run all slice migrations | `migrate --all-slices` | Default + every slice connection |
 | Slice component | `make:component Button --slice=pizza` | View: `pizza::components.button` |
 | Slice test | `make:test OrderTest --slice=pizza` | Created in slice tests/ |
-| Nested slice | `make:slice posts --dir=api` | Creates in `src/api/posts/` |
+| Nested slice | `make:slice api/posts` | Creates in `src/api/posts/`, identifier `api.posts` |
 
 ## Configuration Options
 
 Published config (`config/laravel-slice.php`):
 - `root.folder`: Where slices are stored (default: `'src'`)
 - `root.namespace`: Root namespace for slices (default: `'slice'`)
+- `root.namespace-mode`: `'prefix'` or `'fallback'` (default: `'prefix'`)
+- `test.namespace`: Root namespace for slice tests (default: `'test'`)
 - `discovery.type`: Provider discovery method (default: `'composer'`)
 
 Publish config:
 ```bash
-php artisan vendor:publish --provider="FullSmack\LaravelSlice\LaravelSliceServiceProvider" --tag="config"
+php artisan vendor:publish --tag=laravel-slice
 ```
 
 ## Key Reminders
 
 - Config files in `slice/config/` are auto-registered; no manual registration needed
-- Always use `slice-name::` prefix for all resource access
-- Slice-specific connections require `UsesConnection` trait on models
-- The `--dir` option creates nested slices (e.g., `src/api/posts/`)
+- Always use the `slice-identifier::` prefix for all resource access
+- Slice-specific connections require `UsesConnection` trait on bound models
+- Nested slices are created with `make:slice api/posts` or `--dir=api` (only `make:slice` has `--dir`)
 - Service providers are auto-registered in `composer.json` by default

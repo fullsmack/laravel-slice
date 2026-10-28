@@ -4,8 +4,11 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice\Command;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Composer;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use JsonException;
+use stdClass;
 
 use FullSmack\LaravelSlice\Command\SliceDefinitions;
 use FullSmack\LaravelSlice\Command\SliceMakeDefinitions;
@@ -25,11 +28,6 @@ class MakeSlice extends Command
      */
     protected $description = 'Create a new slice';
 
-    public function __construct()
-    {
-        parent::__construct();
-    }
-
     /**
      * @return int
      */
@@ -41,11 +39,45 @@ class MakeSlice extends Command
         /** @var string|null $dirOption */
         $dirOption = $this->option('dir');
 
+        foreach ([$sliceName, $dirOption ?? ''] as $value)
+        {
+            $invalidSegment = $this->findInvalidSegment($value);
+
+            if ($invalidSegment !== null)
+            {
+                $this->error(
+                    "Invalid slice path segment \"{$invalidSegment}\". " .
+                    'Segments must start with a letter and contain only letters, digits, "-" or "_".'
+                );
+
+                return Command::FAILURE;
+            }
+        }
+
+        $composerFile = base_path('composer.json');
+
+        if (!File::exists($composerFile))
+        {
+            $this->error("Unable to locate composer.json at [{$composerFile}].");
+
+            return Command::FAILURE;
+        }
+
         $this->defineSlice($sliceName, $dirOption);
 
         if (File::exists($this->slicePath()))
         {
-            $this->error("Slice with name \"{$this->sliceName}\" already exists");
+            $this->error("Slice with identifier \"{$this->sliceName}\" already exists");
+
+            return Command::FAILURE;
+        }
+
+        try {
+            $this->updateComposerJson($composerFile);
+        }
+        catch (JsonException $e)
+        {
+            $this->error("Unable to parse composer.json: {$e->getMessage()}");
 
             return Command::FAILURE;
         }
@@ -68,32 +100,70 @@ class MakeSlice extends Command
 
         $stubPath = __DIR__ .'/../../stubs/SliceServiceProvider.stub';
 
-        $serviceProviderContent = File::get($stubPath);
-
-        $replaced = Str::replace(
+        $serviceProviderContent = str_replace(
             ['{{sliceRootNamespace}}', '{{slicePascalName}}', '{{sliceName}}'],
             [$this->sliceNamespaceBase(), $slicePascalName, $this->sliceName],
-            $serviceProviderContent
+            File::get($stubPath)
         );
-
-        $serviceProviderContent = is_array($replaced) ? implode('', $replaced) : $replaced;
 
         $serviceProviderPath = $this->sliceSourcePath("{$slicePascalName}ServiceProvider.php");
 
         File::put($serviceProviderPath, $serviceProviderContent);
 
-        $this->updateComposerJson();
-        $this->runComposerDumpAutoload();
+        $this->dumpAutoload();
 
         $this->info("Slice \"{$this->sliceName}\" created successfully.");
+
+        if (config('laravel-slice.discovery.type') !== 'composer')
+        {
+            $this->line(
+                "Register the service provider yourself, e.g. in bootstrap/providers.php: " .
+                "{$this->sliceNamespace()}\\{$slicePascalName}ServiceProvider::class"
+            );
+        }
 
         return Command::SUCCESS;
     }
 
-    private function updateComposerJson(): void
+    /**
+     * Returns the first path segment that cannot become a valid directory and namespace segment.
+     */
+    private function findInvalidSegment(string $value): ?string
     {
-        $composerFile = base_path('composer.json');
-        $composerData = File::json($composerFile);
+        $value = trim(str_replace('\\', '/', $value), '/');
+
+        if ($value === '')
+        {
+            return null;
+        }
+
+        foreach (preg_split('#[/.]#', $value) ?: [] as $segment)
+        {
+            if (!preg_match('/^[A-Za-z][A-Za-z0-9_-]*$/', $segment))
+            {
+                return $segment;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Adds the slice autoload entries (and provider, when using composer discovery).
+     *
+     * The file is decoded to objects rather than arrays so that empty objects
+     * such as `"require-dev": {}` survive the round trip.
+     *
+     * @throws JsonException
+     */
+    private function updateComposerJson(string $composerFile): void
+    {
+        $composerData = json_decode(File::get($composerFile), false, 512, JSON_THROW_ON_ERROR);
+
+        if (!$composerData instanceof stdClass)
+        {
+            throw new JsonException('composer.json must contain a JSON object');
+        }
 
         $slicePascalName = Str::studly($this->sliceFolderName);
 
@@ -105,44 +175,64 @@ class MakeSlice extends Command
 
         $testNamespace = $this->sliceTestNamespace();
 
-        // Update autoload section
-        if (!isset($composerData['autoload']['psr-4'][$namespace . '\\']))
-        {
-            $composerData['autoload']['psr-4'][$namespace . '\\'] = "{$sliceRoot}/src/";
-        }
+        $autoload = $this->objectAt($composerData, 'autoload', 'psr-4');
+        $autoload->{$namespace . '\\'} ??= "{$sliceRoot}/src/";
 
-        // Update autoload-dev section
-        if (!isset($composerData['autoload-dev']['psr-4'][$testNamespace . '\\']))
-        {
-            $composerData['autoload-dev']['psr-4'][$testNamespace . '\\'] = "{$sliceRoot}/tests/";
-        }
-
-        $providerClass = "{$namespace}\\{$slicePascalName}ServiceProvider";
+        $autoloadDev = $this->objectAt($composerData, 'autoload-dev', 'psr-4');
+        $autoloadDev->{$testNamespace . '\\'} ??= "{$sliceRoot}/tests/";
 
         if (config('laravel-slice.discovery.type') === 'composer')
         {
-            // Update extra section for Laravel providers
-            if (!isset($composerData['extra']['laravel']['providers']))
+            $laravel = $this->objectAt($composerData, 'extra', 'laravel');
+
+            /** @var array<int, string> $providers */
+            $providers = $laravel->providers ?? [];
+
+            $providerClass = "{$namespace}\\{$slicePascalName}ServiceProvider";
+
+            if (!in_array($providerClass, $providers, true))
             {
-                $composerData['extra']['laravel']['providers'] = [];
+                $providers[] = $providerClass;
             }
 
-            if (!in_array($providerClass, $composerData['extra']['laravel']['providers']))
-            {
-                $composerData['extra']['laravel']['providers'][] = $providerClass;
-            }
+            $laravel->providers = $providers;
         }
 
-        // Save the updated composer.json
-        file_put_contents($composerFile, json_encode($composerData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+        File::put(
+            $composerFile,
+            json_encode(
+                $composerData,
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR
+            ) . "\n"
+        );
     }
 
-    protected function runComposerDumpAutoload(): void
+    /**
+     * Walks (and creates) nested objects, e.g. objectAt($data, 'autoload', 'psr-4').
+     */
+    private function objectAt(stdClass $data, string ...$keys): stdClass
     {
-        $process = new \Symfony\Component\Process\Process(['composer', 'dump-autoload']);
-        $process->setWorkingDirectory(base_path());
-        $process->run(function ($type, $buffer) {
-            echo $buffer;
-        });
+        foreach ($keys as $key)
+        {
+            if (!isset($data->{$key}) || !$data->{$key} instanceof stdClass)
+            {
+                $data->{$key} = new stdClass();
+            }
+
+            $data = $data->{$key};
+        }
+
+        return $data;
+    }
+
+    protected function dumpAutoload(): void
+    {
+        /** @var Composer $composer */
+        $composer = $this->laravel->make('composer');
+
+        if ($composer->dumpAutoloads() !== 0)
+        {
+            $this->warn('`composer dump-autoload` failed. Run it manually to autoload the new slice.');
+        }
     }
 }

@@ -51,7 +51,7 @@ final class MigrateSliceAllSlicesTest extends TestCase
         mkdir($slicePath, 0777, true);
 
         $slice = (new Slice())
-            ->setName('no-connection-slice')
+            ->setIdentifier('no-connection-slice')
             ->setPath($slicePath);
 
         SliceRegistry::register($slice);
@@ -80,7 +80,7 @@ final class MigrateSliceAllSlicesTest extends TestCase
         mkdir($slicePath, 0777, true);
 
         $slice = (new Slice())
-            ->setName('no-migrations-slice')
+            ->setIdentifier('no-migrations-slice')
             ->setPath($slicePath)
             ->useConnection('secondary');
 

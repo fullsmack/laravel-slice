@@ -32,7 +32,7 @@ final class ExtensionTest extends TestCase
     public function it_receives_slice_instance_in_register(): void
     {
         $slice = new Slice();
-        $slice->setName('test-slice');
+        $slice->setIdentifier('test-slice');
 
         $extension = new class implements Extension {
             public ?Slice $receivedSlice = null;
@@ -46,6 +46,6 @@ final class ExtensionTest extends TestCase
         $extension->register($slice);
 
         $this->assertSame($slice, $extension->receivedSlice);
-        $this->assertSame('test-slice', $extension->receivedSlice->name());
+        $this->assertSame('test-slice', $extension->receivedSlice->identifier());
     }
 }

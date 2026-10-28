@@ -3,24 +3,29 @@ declare(strict_types=1);
 
 namespace FullSmack\LaravelSlice\Testing;
 
+use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\SliceRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schema;
-use RuntimeException;
+use PDO;
 
 /**
  * Trait for refreshing the default database and all slice databases in tests.
  *
  * This trait combines Laravel's RefreshDatabase behavior with slice-specific refreshes.
  * It runs default connection migrations first (for User/auth tables), then runs
- * slice migrations for custom connections.
+ * slice migrations for custom connections. Each test runs inside a transaction
+ * on every refreshed connection, which is rolled back afterwards.
  *
  * Usage:
  *   use RefreshAllDatabases;
  *
- *   // Optional: limit to a single slice + default
- *   protected ?string $refreshSlice = 'accounting-bookkeeping';
+ *   // Optional: limit to one or more slices (plus the default connection)
+ *   protected string|array|null $refreshSlice = 'accounting.bookkeeping';
+ *
+ * Slices whose connection is the default test connection are migrated together
+ * with the default database by `migrate:fresh` (see migrateFreshUsing()).
  *
  * @phpstan-ignore trait.unused (trait is meant to be used by package consumers in their tests)
  */
@@ -28,17 +33,12 @@ trait RefreshAllDatabases
 {
     use RefreshDatabase {
         refreshDatabase as protected refreshDefaultDatabase;
+        migrateFreshUsing as protected defaultMigrateFreshUsing;
     }
 
     /**
-     * Optionally limit to a single slice (plus default connection).
-     * Set this property in your test class to scope migrations.
-     */
-    protected ?string $refreshSlice = null;
-
-    /**
      * Track which (connection, slice) pairs have been migrated.
-     * Key format: "{connection}:{sliceName}"
+     * Key format: "{connection}:{sliceIdentifier}"
      *
      * Static so it persists across tests (migrations run once per test suite run).
      *
@@ -56,6 +56,14 @@ trait RefreshAllDatabases
     protected static array $sliceConnectionsDropped = [];
 
     /**
+     * PDO handles of in-memory slice connections, kept so the migrated
+     * database survives the application being recreated between tests.
+     *
+     * @var array<string, PDO>
+     */
+    protected static array $sliceInMemoryConnections = [];
+
+    /**
      * Track which connections have an active transaction in the current test.
      * Reset at the start of each refreshSliceDatabases() call.
      *
@@ -70,33 +78,47 @@ trait RefreshAllDatabases
         $this->refreshSliceDatabases();
     }
 
+    /**
+     * The identifiers of the slices to refresh: those listed in the test class's
+     * $refreshSlice property, or every registered slice with its own connection.
+     *
+     * @return array<int, string>
+     */
+    protected function slicesToRefresh(): array
+    {
+        // Read the optional property dynamically: declaring it in the trait would
+        // make a redeclaration with a different default a fatal error.
+        /** @var string|array<int, string>|null $refreshSlice */
+        $refreshSlice = get_object_vars($this)['refreshSlice'] ?? null;
+
+        if ($refreshSlice !== null)
+        {
+            return (array) $refreshSlice;
+        }
+
+        return SliceRegistry::slicesWithConnections()
+            ->map(static fn (Slice $slice): string => $slice->identifier())
+            ->values()
+            ->all();
+    }
+
     protected function refreshSliceDatabases(): void
     {
         $this->activeSliceTransactions = [];
 
-        if ($this->refreshSlice !== null)
+        foreach ($this->slicesToRefresh() as $identifier)
         {
-            $this->refreshSingleSliceDatabase($this->refreshSlice);
-
-            return;
-        }
-
-        $slices = SliceRegistry::slicesWithConnections();
-
-        foreach ($slices as $slice)
-        {
-            $this->refreshSingleSliceDatabase($slice->name());
+            $this->refreshSingleSliceDatabase($identifier);
         }
     }
 
-    protected function refreshSingleSliceDatabase(string $sliceName): void
+    /**
+     * @throws \FullSmack\LaravelSlice\SliceNotRegistered when the slice is not registered
+     * @throws \FullSmack\LaravelSlice\SliceMisconfigured when the slice connection cannot be resolved
+     */
+    protected function refreshSingleSliceDatabase(string $identifier): void
     {
-        if (!SliceRegistry::has($sliceName))
-        {
-            throw new RuntimeException("Slice '{$sliceName}' is not registered.");
-        }
-
-        $slice = SliceRegistry::get($sliceName);
+        $slice = SliceRegistry::get($identifier);
 
         if (!$slice->usesConnection())
         {
@@ -104,17 +126,27 @@ trait RefreshAllDatabases
             return;
         }
 
+        /** @var string $connection usesConnection() guarantees a string or an exception */
         $connection = $slice->connection();
 
-        if ($connection === null)
+        if ($connection === $this->defaultConnectionName())
         {
-            throw new RuntimeException(
-                "Slice '{$sliceName}' is configured to use a connection but no connection is defined."
-            );
+            // Migrated by migrate:fresh and wrapped in RefreshDatabase's transaction
+            return;
         }
 
-        $migrationPath = $slice->migrationPath();
-        $migrationKey = "{$connection}:{$sliceName}";
+        $database = $this->app->make('db');
+        $inMemory = $this->isInMemoryConnection($connection);
+
+        // Restore once per test, before the transaction starts (setPdo() resets the transaction count)
+        if ($inMemory
+            && isset(static::$sliceInMemoryConnections[$connection])
+            && !isset($this->activeSliceTransactions[$connection]))
+        {
+            $database->connection($connection)->setPdo(static::$sliceInMemoryConnections[$connection]);
+        }
+
+        $migrationKey = "{$connection}:{$identifier}";
 
         if (!isset(static::$slicesMigrated[$migrationKey]))
         {
@@ -127,12 +159,17 @@ trait RefreshAllDatabases
 
             Artisan::call('migrate', [
                 '--database' => $connection,
-                '--path' => $migrationPath,
+                '--path' => $slice->migrationPath(),
                 '--realpath' => true,
                 '--force' => true,
             ]);
 
             static::$slicesMigrated[$migrationKey] = true;
+        }
+
+        if ($inMemory)
+        {
+            static::$sliceInMemoryConnections[$connection] ??= $database->connection($connection)->getPdo();
         }
 
         // Begin a transaction for this connection only once per test
@@ -141,6 +178,75 @@ trait RefreshAllDatabases
             $this->beginSliceTransaction($connection);
             $this->activeSliceTransactions[$connection] = true;
         }
+    }
+
+    /**
+     * Adds the migrations of slices that live on the default connection to
+     * Laravel's `migrate:fresh` run, so they are not wiped by it.
+     *
+     * If your test class overrides migrateFreshUsing(), merge in
+     * defaultConnectionSliceMigrationOptions() yourself.
+     *
+     * @return array<string, mixed>
+     */
+    protected function migrateFreshUsing()
+    {
+        return array_merge(
+            $this->defaultMigrateFreshUsing(),
+            $this->defaultConnectionSliceMigrationOptions(),
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function defaultConnectionSliceMigrationOptions(): array
+    {
+        $defaultConnection = $this->defaultConnectionName();
+        $paths = [];
+
+        foreach ($this->slicesToRefresh() as $identifier)
+        {
+            if (!SliceRegistry::has($identifier))
+            {
+                continue;
+            }
+
+            $slice = SliceRegistry::get($identifier);
+
+            if ($slice->usesConnection()
+                && $slice->connection() === $defaultConnection
+                && is_dir($slice->migrationPath()))
+            {
+                $paths[] = $slice->migrationPath();
+            }
+        }
+
+        if ($paths === [])
+        {
+            return [];
+        }
+
+        // --path replaces the default locations, so they have to be listed as well
+        return [
+            '--path' => array_values(array_unique([
+                ...$this->app['migrator']->paths(),
+                $this->app->databasePath('migrations'),
+                ...$paths,
+            ])),
+            '--realpath' => true,
+        ];
+    }
+
+    protected function defaultConnectionName(): string
+    {
+        /** @var string */
+        return config('database.default');
+    }
+
+    protected function isInMemoryConnection(string $connection): bool
+    {
+        return config("database.connections.{$connection}.database") === ':memory:';
     }
 
     /**
@@ -169,5 +275,6 @@ trait RefreshAllDatabases
     {
         static::$slicesMigrated = [];
         static::$sliceConnectionsDropped = [];
+        static::$sliceInMemoryConnections = [];
     }
 }

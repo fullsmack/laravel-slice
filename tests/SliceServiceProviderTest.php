@@ -30,7 +30,7 @@ final class SliceServiceProviderTest extends TestCase
         return new class($this->app) extends SliceServiceProvider {
             public function configure(Slice $slice): void
             {
-                $slice->setName('test-slice');
+                $slice->setIdentifier('test-slice');
             }
         };
     }
@@ -59,7 +59,7 @@ final class SliceServiceProviderTest extends TestCase
 
             public function configure(Slice $slice): void
             {
-                $slice->setName('extension-slice')
+                $slice->setIdentifier('extension-slice')
                     ->withExtension($this->extension);
             }
         };
@@ -103,7 +103,7 @@ final class SliceServiceProviderTest extends TestCase
 
             public function configure(Slice $slice): void
             {
-                $slice->setName('config-test-slice');
+                $slice->setIdentifier('config-test-slice');
             }
 
             protected function getSliceBaseDir(): string
@@ -223,7 +223,7 @@ final class SliceServiceProviderTest extends TestCase
 
             public function configure(Slice $slice): void
             {
-                $slice->setName('hooks-test');
+                $slice->setIdentifier('hooks-test');
             }
 
             public function registeringSlice(): void
@@ -277,7 +277,7 @@ final class SliceServiceProviderTest extends TestCase
 
             public function configure(Slice $slice): void
             {
-                $slice->setName('multi-extension-slice')
+                $slice->setIdentifier('multi-extension-slice')
                     ->withExtension($this->extension1)
                     ->withExtension($this->extension2);
             }
@@ -294,7 +294,7 @@ final class SliceServiceProviderTest extends TestCase
         /** @disregard P1013 method is defined on anonymous class */
         $slice = $provider->getSlice();
 
-        $this->assertSame('multi-extension-slice', $slice->name());
+        $this->assertSame('multi-extension-slice', $slice->identifier());
         $this->assertCount(2, $slice->extensions());
         $this->assertTrue($extension1->registered);
         $this->assertTrue($extension2->registered);

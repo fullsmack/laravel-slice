@@ -4,12 +4,12 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice\Test;
 
 use FullSmack\LaravelSlice\Slice;
+use FullSmack\LaravelSlice\SliceNotRegistered;
 use FullSmack\LaravelSlice\SliceRegistry;
 use FullSmack\LaravelSlice\Testing\RefreshAllDatabases;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Schema;
 use PHPUnit\Framework\Attributes\Test;
-use RuntimeException;
 
 final class RefreshAllDatabasesTest extends TestCase
 {
@@ -84,9 +84,9 @@ PHP
         );
 
         return (new Slice())
-            ->setName($sliceName)
+            ->setIdentifier($sliceName)
             ->setPath($slicePath)
-            ->withConnection($connection);
+            ->useConnection($connection);
     }
 
     // -------------------------------------------------------------------------
@@ -139,7 +139,7 @@ PHP
     #[Test]
     public function it_throws_exception_when_slice_is_not_registered(): void
     {
-        $this->expectException(RuntimeException::class);
+        $this->expectException(SliceNotRegistered::class);
         $this->expectExceptionMessage("Slice 'non-existent' is not registered.");
 
         $this->refreshSingleSliceDatabase('non-existent');
@@ -149,7 +149,7 @@ PHP
     public function it_skips_slices_that_use_the_default_connection(): void
     {
         $slice = (new Slice())
-            ->setName('default-connection-slice')
+            ->setIdentifier('default-connection-slice')
             ->setPath($this->tempPath . '/default-connection-slice');
 
         SliceRegistry::register($slice);

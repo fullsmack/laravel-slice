@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice\Command;
 
 use Illuminate\Console\Command;
+use FullSmack\LaravelSlice\SliceException;
 use FullSmack\LaravelSlice\SliceRegistry;
 
 class ListSliceMigrations extends Command
@@ -35,12 +36,18 @@ class ListSliceMigrations extends Command
         {
             $migrationPath = $slice->migrationPath();
             $hasMigrations = is_dir($migrationPath) ? '✓' : '✗';
-            $connection = $slice->usesConnection()
-                ? $slice->connection()
-                : '(default)';
+            try {
+                $connection = $slice->usesConnection()
+                    ? $slice->connection()
+                    : '(default)';
+            }
+            catch (SliceException)
+            {
+                $connection = '<error>(missing config)</error>';
+            }
 
             $rows[] = [
-                $slice->name(),
+                $slice->identifier(),
                 $connection,
                 $migrationPath,
                 $hasMigrations,

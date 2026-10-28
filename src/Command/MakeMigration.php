@@ -21,8 +21,7 @@ class MakeMigration extends MigrateMakeCommand
         {--path= : The location where the migration file should be created}
         {--realpath : Indicate any provided migration file paths are pre-resolved absolute paths}
         {--fullpath : Output the full path of the migration (Deprecated)}
-        {--slice= : The slice that the migration belongs to}
-        {--dir= : Subdirectory where the slice is located}';
+        {--slice= : The slice that the migration belongs to}';
 
     public function __construct(MigrationCreator $creator, Composer $composer)
     {
@@ -30,7 +29,7 @@ class MakeMigration extends MigrateMakeCommand
     }
 
     /**
-     * @return void
+     * @return int
      */
     public function handle()
     {
@@ -40,7 +39,7 @@ class MakeMigration extends MigrateMakeCommand
         {
             parent::handle();
 
-            return;
+            return self::SUCCESS;
         }
 
         try {
@@ -50,15 +49,24 @@ class MakeMigration extends MigrateMakeCommand
         {
             $this->error($e->getMessage());
 
-            return;
+            return self::FAILURE;
         }
 
         $this->input->setOption('path', $this->sliceMigrationPath());
         $this->input->setOption('realpath', true);
 
         parent::handle();
+
+        return self::SUCCESS;
     }
 
+    /**
+     * The connection to hardcode in the generated migration.
+     *
+     * Only explicit names from ->useConnection('name') are written. Connections
+     * resolved from config may differ per environment, so those migrations rely
+     * on the --database option passed by `migrate --slice` / `--all-slices`.
+     */
     protected function resolveSliceConnection(): ?string
     {
         if (!SliceRegistry::has($this->sliceName))
@@ -68,7 +76,7 @@ class MakeMigration extends MigrateMakeCommand
 
         $slice = SliceRegistry::get($this->sliceName);
 
-        return $slice->usesConnection() ? $slice->connection() : null;
+        return $slice->hasExplicitConnection() ? $slice->connection() : null;
     }
 
     protected function writeMigration($name, $table, $create)

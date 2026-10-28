@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 
 class Slice
 {
-    protected string $name = '';
+    protected string $identifier = '';
     protected string $path;
     protected string $namespace;
 
@@ -31,16 +31,36 @@ class Slice
     /** @var array<class-string<Model>> */
     private array $modelsToBind = [];
 
-    public function setName(string $name): static
+    /**
+     * Set the unique slice identifier, e.g. 'pizza' or 'api.posts' for nested slices.
+     * It is also the `identifier::` namespace for the slice's config, views and translations.
+     */
+    public function setIdentifier(string $identifier): static
     {
-        $this->name = $name;
+        $this->identifier = $identifier;
 
         return $this;
     }
 
     public function identifier(): string
     {
-        return $this->name;
+        return $this->identifier;
+    }
+
+    /**
+     * @deprecated Use setIdentifier() instead. Will be removed in 2.0.
+     */
+    public function setName(string $name): static
+    {
+        return $this->setIdentifier($name);
+    }
+
+    /**
+     * @deprecated Use identifier() instead. Will be removed in 2.0.
+     */
+    public function name(): string
+    {
+        return $this->identifier;
     }
 
     public function useRoutes(): static
@@ -71,22 +91,14 @@ class Slice
         return $this;
     }
 
-    public function useConnection(?string $connection = null): static
-    {
-        $this->usesConnection = true;
-        $this->connection = $connection;
-
-        return $this;
-    }
-
     /**
-     * Configure the slice to use a specific database connection.
+     * Configure the slice to use its own database connection.
      * Optionally bind models to this connection.
      *
-     * @param string|null $connection The connection name, or null to use config-based lookup
-     * @param array<class-string<Model>> $modelsToBind Optional array of model classes to bind to this connection
+     * @param string|null $connection The connection name, or null to use `{identifier}::database.default` from config
+     * @param array<class-string<Model>> $modelsToBind Model classes (using the UsesConnection trait) to bind to this connection
      */
-    public function withConnection(?string $connection = null, array $modelsToBind = []): static
+    public function useConnection(?string $connection = null, array $modelsToBind = []): static
     {
         $this->usesConnection = true;
         $this->connection = $connection;
@@ -95,6 +107,19 @@ class Slice
         return $this;
     }
 
+    /**
+     * @deprecated Use useConnection() instead. Will be removed in 2.0.
+     *
+     * @param array<class-string<Model>> $modelsToBind
+     */
+    public function withConnection(?string $connection = null, array $modelsToBind = []): static
+    {
+        return $this->useConnection($connection, $modelsToBind);
+    }
+
+    /**
+     * @throws SliceMisconfigured when the connection should come from config but none is set
+     */
     public function connection(): ?string
     {
         if ($this->connection !== null)
@@ -104,18 +129,27 @@ class Slice
 
         if ($this->usesConnection)
         {
-            $configKey = $this->name . '::database.default';
+            $configKey = $this->identifier . '::database.default';
             $connection = config($configKey);
 
-            if ($connection === null)
+            if (!is_string($connection) || $connection === '')
             {
-                throw SliceNotRegistered::becauseDatabaseConfigIsMissing($this->name, $configKey);
+                throw SliceMisconfigured::becauseDatabaseConfigIsMissing($this->identifier, $configKey);
             }
 
             return $connection;
         }
 
         return null;
+    }
+
+    /**
+     * Whether the connection name was passed explicitly to useConnection(),
+     * as opposed to being resolved from the slice config.
+     */
+    public function hasExplicitConnection(): bool
+    {
+        return $this->connection !== null;
     }
 
     /**
@@ -195,11 +229,6 @@ class Slice
         }
 
         return $this->namespace;
-    }
-
-    public function name(): string
-    {
-        return $this->name;
     }
 
     public function hasRoutes(): bool

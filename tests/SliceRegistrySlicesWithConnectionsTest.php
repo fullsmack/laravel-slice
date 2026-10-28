@@ -14,11 +14,11 @@ final class SliceRegistrySlicesWithConnectionsTest extends TestCase
     public function slices_with_connections_returns_only_connection_slices(): void
     {
         $sliceWithConnection = (new Slice())
-            ->setName('with-connection')
+            ->setIdentifier('with-connection')
             ->useConnection('custom');
 
         $sliceWithoutConnection = (new Slice())
-            ->setName('without-connection');
+            ->setIdentifier('without-connection');
 
         SliceRegistry::register($sliceWithConnection);
         SliceRegistry::register($sliceWithoutConnection);
@@ -34,8 +34,8 @@ final class SliceRegistrySlicesWithConnectionsTest extends TestCase
     #[Test]
     public function slices_with_connections_returns_empty_when_none(): void
     {
-        $slice1 = (new Slice())->setName('slice-one');
-        $slice2 = (new Slice())->setName('slice-two');
+        $slice1 = (new Slice())->setIdentifier('slice-one');
+        $slice2 = (new Slice())->setIdentifier('slice-two');
 
         SliceRegistry::register($slice1);
         SliceRegistry::register($slice2);
@@ -52,7 +52,7 @@ final class SliceRegistrySlicesWithConnectionsTest extends TestCase
         $basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'test-project';
 
         $slice = (new Slice())
-            ->setName('posts')
+            ->setIdentifier('posts')
             ->setPath($basePath . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'posts');
 
         SliceRegistry::register($slice);
@@ -70,7 +70,7 @@ final class SliceRegistrySlicesWithConnectionsTest extends TestCase
         $basePath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'test-project';
 
         $slice = (new Slice())
-            ->setName('posts')
+            ->setIdentifier('posts')
             ->setPath($basePath . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'posts');
 
         SliceRegistry::register($slice);
@@ -83,18 +83,32 @@ final class SliceRegistrySlicesWithConnectionsTest extends TestCase
     }
 
     #[Test]
+    public function slice_for_migration_path_does_not_match_sibling_directories_with_the_same_prefix(): void
+    {
+        $slice = (new Slice())
+            ->setIdentifier('posts')
+            ->setPath('/app/src/posts');
+
+        SliceRegistry::register($slice);
+
+        $this->assertNull(SliceRegistry::sliceForMigrationPath('/app/src/posts/database/migrations-archive/x.php'));
+        $this->assertSame($slice, SliceRegistry::sliceForMigrationPath('/app/src/posts/database/migrations'));
+        $this->assertSame($slice, SliceRegistry::sliceForMigrationPath('/app/src/posts/database/migrations/x.php'));
+    }
+
+    #[Test]
     public function slices_with_connections_returns_multiple_when_available(): void
     {
         $slice1 = (new Slice())
-            ->setName('slice-one')
+            ->setIdentifier('slice-one')
             ->useConnection('connection-one');
 
         $slice2 = (new Slice())
-            ->setName('slice-two')
+            ->setIdentifier('slice-two')
             ->useConnection('connection-two');
 
         $slice3 = (new Slice())
-            ->setName('slice-three');
+            ->setIdentifier('slice-three');
 
         SliceRegistry::register($slice1);
         SliceRegistry::register($slice2);

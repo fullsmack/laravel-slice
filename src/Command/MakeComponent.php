@@ -23,30 +23,27 @@ class MakeComponent extends ComponentMakeCommand
     protected $description = 'Create a new view component class in a slice';
 
     /**
-     * @return void
+     * @return int
      */
     public function handle()
     {
         $sliceName = $this->option('slice');
 
-        if (!$sliceName || !is_string($sliceName))
+        if (is_string($sliceName) && $sliceName !== '')
         {
-            parent::handle();
+            try {
+                $this->loadFromRegistry($sliceName);
+            }
+            catch (SliceNotRegistered $e)
+            {
+                $this->error($e->getMessage());
 
-            return;
+                return self::FAILURE;
+            }
         }
 
-        try {
-            $this->loadFromRegistry($sliceName);
-        }
-        catch (SliceNotRegistered $e)
-        {
-            $this->error($e->getMessage());
-
-            return;
-        }
-
-        parent::handle();
+        /** @phpstan-ignore staticMethod.void (documented as void, but returns false when the class already exists) */
+        return parent::handle() === false ? self::FAILURE : self::SUCCESS;
     }
 
     /**
@@ -64,26 +61,37 @@ class MakeComponent extends ComponentMakeCommand
 
         return str_replace(
             ['DummyView', '{{ view }}'],
-            "view('{$this->sliceName}::components.{$this->getView()}')",
+            "view('{$this->sliceName}::{$this->sliceView()}')",
             GeneratorCommand::buildClass($name)
         );
     }
 
     /**
-     * Get the console command options.
-     *
-     * @return array<array{
-     *  0: string,
-     *  1: string|null,
-     *  2: int,
-     *  3: string,
-     * }>
+     * Newer Laravel versions include the 'components.' prefix (or the --path
+     * option) in getView(); older Laravel 11 releases add it in buildClass().
      */
-    protected function getOptions()
+    private function sliceView(): string
     {
-        return array_merge(parent::getOptions(), [
-            ['slice', null, InputOption::VALUE_OPTIONAL, 'Create the component in a slice'],
-            ['dir', null, InputOption::VALUE_OPTIONAL, 'Subdirectory to create the component in'],
-        ]);
+        $view = $this->getView();
+
+        $usesCustomPath = $this->hasOption('path') && is_string($this->option('path'));
+
+        if ($usesCustomPath || str_starts_with($view, 'components.'))
+        {
+            return $view;
+        }
+
+        return 'components.' . $view;
+    }
+
+    /**
+     * Added here rather than in getOptions(), so it keeps working if Laravel
+     * switches make:component to a $signature (as it did for make:test).
+     */
+    protected function configure(): void
+    {
+        parent::configure();
+
+        $this->addOption('slice', null, InputOption::VALUE_REQUIRED, 'Create the component in a slice');
     }
 }

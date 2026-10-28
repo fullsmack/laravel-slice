@@ -10,13 +10,13 @@ final class {{slicePascalName}}ServiceProvider extends SliceServiceProvider
 {
     public function configure(Slice $slice): void
     {
-        $slice->setName('{{sliceName}}');
+        $slice->setIdentifier('{{sliceName}}');
 
         // For internal modules that use the main app's database:
         // $slice->useMigrations();
 
         // For modules with separate database connections:
-        // $slice->useConnection();
-        // Requires: config/database.php with default connection
+        // $slice->useMigrations()->useConnection('connection-name');
+        // or ->useConnection() to read the name from config/database.php ('default' key)
     }
 }

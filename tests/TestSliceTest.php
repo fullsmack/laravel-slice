@@ -51,7 +51,7 @@ final class TestSliceTest extends TestCase
         mkdir($slicePath, 0777, true);
 
         $slice = (new Slice())
-            ->setName('no-tests-slice')
+            ->setIdentifier('no-tests-slice')
             ->setPath($slicePath)
             ->setNamespace('Slice\\NoTestsSlice');
 

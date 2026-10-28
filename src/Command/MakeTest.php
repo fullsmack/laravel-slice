@@ -14,28 +14,28 @@ class MakeTest extends TestMakeCommand
     use SliceDefinitions;
 
     /**
-     * @return bool|null
+     * Returns an exit code, since Laravel casts the parent's `false` to 0 (success).
+     *
+     * @return int
      */
-    public function handle()
+    public function handle() // @phpstan-ignore method.childReturnType
     {
         $sliceName = $this->option('slice');
 
-        if (!$sliceName || !is_string($sliceName))
+        if (is_string($sliceName) && $sliceName !== '')
         {
-            return parent::handle();
+            try {
+                $this->loadFromRegistry($sliceName);
+            }
+            catch (SliceNotRegistered $e)
+            {
+                $this->error($e->getMessage());
+
+                return self::FAILURE;
+            }
         }
 
-        try {
-            $this->loadFromRegistry($sliceName);
-        }
-        catch (SliceNotRegistered $e)
-        {
-            $this->error($e->getMessage());
-
-            return false;
-        }
-
-        return parent::handle();
+        return parent::handle() === false ? self::FAILURE : self::SUCCESS;
     }
 
     /**
@@ -51,7 +51,7 @@ class MakeTest extends TestMakeCommand
             return parent::getPath($name);
         }
 
-        $name = Str::replaceFirst($this->rootNamespace(), '', $name);
+        $name = ltrim(Str::replaceFirst($this->rootNamespace(), '', $name), '\\');
 
         return $this->slicePath('tests') . DIRECTORY_SEPARATOR .
             Path::normalize($name) . '.php';
@@ -82,18 +82,13 @@ class MakeTest extends TestMakeCommand
     }
 
     /**
-     * @return array<array{
-     *  0: string,
-     *  1: string|null,
-     *  2: int,
-     *  3: string,
-     * }>
+     * Added here rather than in getOptions(), because Laravel 13 defines
+     * make:test with a $signature, which makes getOptions() unused.
      */
-    protected function getOptions()
+    protected function configure(): void
     {
-        return array_merge(parent::getOptions(), [
-            ['slice', 's', InputOption::VALUE_OPTIONAL, 'Create a test in a slice or module'],
-            ['dir', null, InputOption::VALUE_OPTIONAL, 'Subdirectory to create the test in'],
-        ]);
+        parent::configure();
+
+        $this->addOption('slice', 's', InputOption::VALUE_REQUIRED, 'Create a test in a slice or module');
     }
 }

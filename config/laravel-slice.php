@@ -15,14 +15,10 @@ return [
         'namespace' => 'test',
     ],
     'discovery' => [
+        /**
+         * - 'composer': make:slice adds the slice service provider to composer.json `extra.laravel.providers`
+         * - any other value: register slice service providers yourself (e.g. in bootstrap/providers.php)
+         */
         'type' => 'composer',
-    ],
-    'architecture' => [
-        'default' => [
-            'controller' => 'http.controllers',
-            'middleware' => 'http.middleware',
-            'model' => 'models',
-            'exception' => 'exceptions',
-        ],
     ],
 ];

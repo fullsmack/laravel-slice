@@ -59,16 +59,9 @@ trait SliceDefinitions
      */
     private function loadFromRegistry(string $sliceName): void
     {
-        if (!SliceRegistry::has($sliceName))
-        {
-            throw new SliceNotRegistered(
-                "Slice \"{$sliceName}\" is not registered. Create it first with make:slice."
-            );
-        }
-
         $slice = SliceRegistry::get($sliceName);
 
-        $this->sliceName = $slice->name();
+        $this->sliceName = $slice->identifier();
         $this->slicePath = $slice->path();
         $this->sliceFolderName = basename($this->slicePath);
         $this->sliceNamespace = $slice->namespace();
@@ -171,6 +164,8 @@ trait SliceDefinitions
 
     /**
      * Gets the slice's database connection name.
+     *
+     * @throws \FullSmack\LaravelSlice\SliceMisconfigured
      */
     private function sliceConnection(): ?string
     {

@@ -8,6 +8,7 @@ use PHPUnit\Framework\Attributes\Test;
 use FullSmack\LaravelSlice\Slice;
 use FullSmack\LaravelSlice\Test\Double\CommandFake;
 use FullSmack\LaravelSlice\Test\Double\ExtensionFake;
+use FullSmack\LaravelSlice\Test\Double\ModelFake;
 
 final class SliceTest extends TestCase
 {
@@ -22,10 +23,10 @@ final class SliceTest extends TestCase
     #[Test]
     public function it_sets_and_gets_name(): void
     {
-        $result = $this->slice->setName('test-slice');
+        $result = $this->slice->setIdentifier('test-slice');
 
         $this->assertSame($this->slice, $result);
-        $this->assertSame('test-slice', $this->slice->name());
+        $this->assertSame('test-slice', $this->slice->identifier());
     }
 
     #[Test]
@@ -169,7 +170,7 @@ final class SliceTest extends TestCase
         $extension = new ExtensionFake();
 
         $result = $this->slice
-            ->setName('test-slice')
+            ->setIdentifier('test-slice')
             ->setPath('/test/path')
             ->setNamespace('Test\\Namespace')
             ->useRoutes()
@@ -179,7 +180,7 @@ final class SliceTest extends TestCase
             ->withExtension($extension);
 
         $this->assertSame($this->slice, $result);
-        $this->assertSame('test-slice', $this->slice->name());
+        $this->assertSame('test-slice', $this->slice->identifier());
         $this->assertSame('/test/path', $this->slice->path());
         $this->assertSame('Test\\Namespace', $this->slice->namespace());
         $this->assertTrue($this->slice->hasRoutes());
@@ -194,7 +195,7 @@ final class SliceTest extends TestCase
     {
         $this->assertFalse($this->slice->usesConnection());
 
-        $result = $this->slice->withConnection('mysql');
+        $result = $this->slice->useConnection('mysql');
 
         $this->assertSame($this->slice, $result);
         $this->assertTrue($this->slice->usesConnection());
@@ -204,17 +205,46 @@ final class SliceTest extends TestCase
     #[Test]
     public function it_enables_connection_without_explicit_name(): void
     {
-        $this->slice->setName('test-slice');
+        $this->slice->setIdentifier('test-slice');
 
-        $result = $this->slice->withConnection();
+        $result = $this->slice->useConnection();
 
         $this->assertSame($this->slice, $result);
         $this->assertTrue($this->slice->usesConnection());
 
         // Connection throws exception when using config-based connection lookup and config doesn't exist
-        $this->expectException(\FullSmack\LaravelSlice\SliceNotRegistered::class);
+        $this->expectException(\FullSmack\LaravelSlice\SliceMisconfigured::class);
         $this->expectExceptionMessage("Database configuration 'test-slice::database.default' is missing");
         $this->slice->connection();
+    }
+
+    #[Test]
+    public function it_tracks_whether_the_connection_name_is_explicit(): void
+    {
+        $this->slice->setIdentifier('test-slice')->useConnection();
+        $this->assertFalse($this->slice->hasExplicitConnection());
+
+        $this->slice->useConnection('mysql');
+        $this->assertTrue($this->slice->hasExplicitConnection());
+    }
+
+    #[Test]
+    public function it_binds_models_with_use_connection(): void
+    {
+        $this->slice->useConnection('mysql', [ModelFake::class]);
+
+        $this->assertSame([ModelFake::class], $this->slice->modelsToBind());
+    }
+
+    #[Test]
+    public function deprecated_aliases_still_work(): void
+    {
+        $this->slice->setName('legacy')->withConnection('mysql', [ModelFake::class]);
+
+        $this->assertSame('legacy', $this->slice->identifier());
+        $this->assertSame('legacy', $this->slice->name());
+        $this->assertSame('mysql', $this->slice->connection());
+        $this->assertSame([ModelFake::class], $this->slice->modelsToBind());
     }
 
     #[Test]

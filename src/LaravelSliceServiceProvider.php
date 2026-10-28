@@ -5,7 +5,6 @@ namespace FullSmack\LaravelSlice;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Console\Command;
-use Illuminate\Database\Migrations\MigrationCreator;
 use FullSmack\LaravelSlice\Command\MakeSlice;
 use FullSmack\LaravelSlice\Command\MakeTest;
 use FullSmack\LaravelSlice\Command\MakeComponent;
@@ -32,8 +31,6 @@ class LaravelSliceServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->registerConfig();
-
         $this->publishesConfig();
 
         $this->registerCommands();
@@ -44,6 +41,8 @@ class LaravelSliceServiceProvider extends ServiceProvider
      */
     public function register()
     {
+        $this->registerConfig();
+
         $this->registerMigrationServices();
     }
 
@@ -71,16 +70,13 @@ class LaravelSliceServiceProvider extends ServiceProvider
     }
 
     /**
-     * The migration-related services register separately to ensure proper stub resolution.
+     * The slice-aware make:migration and migrate commands replace Laravel's own,
+     * so they are bound in register() with the same dependencies.
      */
     protected function registerMigrationServices(): void
     {
         if ($this->app->runningInConsole())
         {
-            $this->app->singleton('migration.creator', function ($app) {
-                return new MigrationCreator($app['files'], $app->basePath('stubs'));
-            });
-
             $this->app->singleton(MakeMigration::class, function ($app) {
                 return new MakeMigration($app['migration.creator'], $app['composer']);
             });

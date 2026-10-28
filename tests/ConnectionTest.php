@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace FullSmack\LaravelSlice\Test;
 
 use PHPUnit\Framework\Attributes\Test;
+use FullSmack\LaravelSlice\SliceMisconfigured;
 use FullSmack\LaravelSlice\Test\TestCase;
 use FullSmack\LaravelSlice\Test\Double\ModelFake;
 use FullSmack\LaravelSlice\Test\Double\SliceServiceProviderFake;
@@ -38,7 +39,7 @@ final class ConnectionTest extends TestCase
     public function it_can_configure_slice_with_explicit_connection(): void
     {
         $provider = (new SliceServiceProviderFake($this->app, 'connection-slice'))
-            ->withConnection('slice-database');
+            ->useConnection('slice-database');
 
         $provider->register();
         $provider->boot();
@@ -71,7 +72,7 @@ final class ConnectionTest extends TestCase
     public function bind_models_to_connection_sets_connection_on_models(): void
     {
         $provider = (new SliceServiceProviderFake($this->app, 'model-binding-slice'))
-            ->withConnection('slice-database', [ModelFake::class]);
+            ->useConnection('slice-database', [ModelFake::class]);
 
         $provider->register();
         $provider->boot();
@@ -80,6 +81,20 @@ final class ConnectionTest extends TestCase
 
         $model = new ModelFake();
         $this->assertSame('slice-database', $model->getConnectionName());
+    }
+
+    #[Test]
+    public function it_throws_when_a_bound_model_does_not_use_the_connection_trait(): void
+    {
+        $provider = (new SliceServiceProviderFake($this->app, 'traitless-slice'))
+            ->useConnection('slice-database', [\Illuminate\Foundation\Auth\User::class]);
+
+        $provider->register();
+
+        $this->expectException(SliceMisconfigured::class);
+        $this->expectExceptionMessage('does not use the');
+
+        $provider->boot();
     }
 
     #[Test]
@@ -97,7 +112,7 @@ final class ConnectionTest extends TestCase
     public function with_connection_with_models_array_sets_connection_on_models(): void
     {
         $provider = (new SliceServiceProviderFake($this->app, 'array-models-slice'))
-            ->withConnection('slice-database', [ModelFake::class]);
+            ->useConnection('slice-database', [ModelFake::class]);
 
         $provider->register();
         $provider->boot();
