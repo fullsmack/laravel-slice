@@ -5,11 +5,17 @@ The project follows [Semantic Versioning](https://semver.org/).
 
 ## [1.0.0] - Unreleased
 
-First stable release. Public API changes since 0.3.0 are listed under **Breaking**
-and **Deprecated**; follow them to upgrade.
+First stable release. Public API changes since 0.3.0 are listed under **Breaking**;
+follow them to upgrade.
 
 ### Breaking
 
+- **`Slice::setName()` and `Slice::name()` were renamed** to `setIdentifier()` and
+  `identifier()`, since nested slices are identified as e.g. `app.main.slice-name`.
+  Update `$slice->setName('…')` in each slice service provider.
+- **`Slice::withConnection()` was removed.** Use `useConnection()`, which now also
+  accepts the models to bind as its second argument:
+  `useConnection('cookbook', [Recipe::class])`.
 - **`RefreshSliceDatabase` was removed.** Use `RefreshAllDatabases` instead (in place of
   Laravel's `RefreshDatabase`). It runs automatically, so remove manual
   `$this->refreshSlice(...)` calls from `setUp()`. To limit the refreshed slices, declare
@@ -39,15 +45,9 @@ and **Deprecated**; follow them to upgrade.
   passes an explicit name to `useConnection('name')`. Config-resolved connections are
   supplied via `--database` by `migrate --slice` / `--all-slices`.
 
-### Deprecated (to be removed in 2.0)
-
-- `Slice::setName()` and `Slice::name()`: use `setIdentifier()` and `identifier()`.
-- `Slice::withConnection()`: use `useConnection()`, which now also accepts the models
-  to bind as its second argument.
-
 ### Added
 
-- `Slice::setIdentifier()` and `Slice::hasExplicitConnection()`.
+- `Slice::hasExplicitConnection()`.
 - `SliceException` marker interface and `SliceMisconfigured` exception.
 - `RefreshAllDatabases`:
   - `$refreshSlice` accepts an array of slice identifiers.

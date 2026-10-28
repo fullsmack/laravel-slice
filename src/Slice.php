@@ -47,22 +47,6 @@ class Slice
         return $this->identifier;
     }
 
-    /**
-     * @deprecated Use setIdentifier() instead. Will be removed in 2.0.
-     */
-    public function setName(string $name): static
-    {
-        return $this->setIdentifier($name);
-    }
-
-    /**
-     * @deprecated Use identifier() instead. Will be removed in 2.0.
-     */
-    public function name(): string
-    {
-        return $this->identifier;
-    }
-
     public function useRoutes(): static
     {
         $this->hasRoutes = true;
@@ -105,16 +89,6 @@ class Slice
         $this->modelsToBind = $modelsToBind;
 
         return $this;
-    }
-
-    /**
-     * @deprecated Use useConnection() instead. Will be removed in 2.0.
-     *
-     * @param array<class-string<Model>> $modelsToBind
-     */
-    public function withConnection(?string $connection = null, array $modelsToBind = []): static
-    {
-        return $this->useConnection($connection, $modelsToBind);
     }
 
     /**

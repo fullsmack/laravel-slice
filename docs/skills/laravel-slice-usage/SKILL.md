@@ -63,8 +63,6 @@ public function configure(Slice $slice): void
 }
 ```
 
-`setName()`, `name()` and `withConnection()` are deprecated aliases of `setIdentifier()`, `identifier()` and `useConnection()`. Don't use them in new code.
-
 ### PSR-4 Namespaces vs Slice Identifiers
 The **slice identifier** (used for Laravel services) is **completely independent** from the **PSR-4 namespace** (used for PHP class autoloading):
 

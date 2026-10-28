@@ -237,17 +237,6 @@ final class SliceTest extends TestCase
     }
 
     #[Test]
-    public function deprecated_aliases_still_work(): void
-    {
-        $this->slice->setName('legacy')->withConnection('mysql', [ModelFake::class]);
-
-        $this->assertSame('legacy', $this->slice->identifier());
-        $this->assertSame('legacy', $this->slice->name());
-        $this->assertSame('mysql', $this->slice->connection());
-        $this->assertSame([ModelFake::class], $this->slice->modelsToBind());
-    }
-
-    #[Test]
     public function it_registers_commands(): void
     {
         $this->assertEmpty($this->slice->commands());
